@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Optional
 
 import aiosqlite
 from fastapi import APIRouter, Depends
@@ -17,9 +16,9 @@ router = APIRouter(prefix="/api/export", tags=["export"])
 
 @router.get("/measurements.csv")
 async def export_measurements_csv(
-    target_id: Optional[int] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
+    target_id: int | None = None,
+    start: str | None = None,
+    end: str | None = None,
     db: aiosqlite.Connection = Depends(get_db),
 ):
     rows = await measurements_repo.list_measurements(
@@ -65,9 +64,9 @@ async def export_measurements_csv(
 @router.get("/report.json")
 async def export_report_json(
     range: str = "24h",
-    start: Optional[str] = None,
-    end: Optional[str] = None,
-    target_id: Optional[int] = None,
+    start: str | None = None,
+    end: str | None = None,
+    target_id: int | None = None,
     db: aiosqlite.Connection = Depends(get_db),
 ):
     stats = await statistics_service.compute_statistics(

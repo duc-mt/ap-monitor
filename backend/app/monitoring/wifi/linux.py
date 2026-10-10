@@ -34,10 +34,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from typing import List, Optional
+from datetime import UTC
 
-from app.monitoring.wifi.base import WifiAdapter
 from app.models.wifi_scan import NeighborNetwork
+from app.monitoring.wifi.base import WifiAdapter
 from app.monitoring.wifi.models import (
     WifiInterfaceInfo,
     WifiMetrics,
@@ -66,7 +66,7 @@ _MCS_PHY_PREFIX = {
 }
 
 
-async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[str]:
+async def _run(cmd: list[str], timeout: float = _TIMEOUT_SECONDS) -> str | None:
     """Argv-list subprocess exec with a strict timeout - never `shell=True`.
 
     Returns None on any failure (binary missing, timeout, non-zero exit)
@@ -83,7 +83,7 @@ async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[st
         return None
     try:
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         return None
@@ -92,14 +92,14 @@ async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[st
     return stdout.decode("utf-8", errors="replace")
 
 
-def _split_nmcli_terse(line: str) -> List[str]:
+def _split_nmcli_terse(line: str) -> list[str]:
     """nmcli -t output escapes a literal ':' inside a field as '\\:' (this
     matters for BSSIDs, which are colon-separated themselves) - split on any
     ':' not preceded by a backslash, then unescape."""
     return [p.replace("\\:", ":") for p in re.split(r"(?<!\\):", line)]
 
 
-async def _list_wifi_devices(interface: Optional[str] = None) -> List[List[str]]:
+async def _list_wifi_devices(interface: str | None = None) -> list[list[str]]:
     fields = "DEVICE,TYPE,STATE"
     out = await _run(["nmcli", "-t", "-f", fields, "device", "status"])
     if out is None:
@@ -112,7 +112,7 @@ async def _list_wifi_devices(interface: Optional[str] = None) -> List[List[str]]
 
 
 class LinuxWifiAdapter(WifiAdapter):
-    async def list_interfaces(self) -> List[WifiInterfaceInfo]:
+    async def list_interfaces(self) -> list[WifiInterfaceInfo]:
         rows = await _list_wifi_devices()
         return [
             WifiInterfaceInfo(
@@ -123,7 +123,7 @@ class LinuxWifiAdapter(WifiAdapter):
             for device, _type, state in rows
         ]
 
-    async def get_active_interface(self) -> Optional[str]:
+    async def get_active_interface(self) -> str | None:
         rows = await _list_wifi_devices()
         for device, _type, state in rows:
             if state == "connected":
@@ -131,10 +131,10 @@ class LinuxWifiAdapter(WifiAdapter):
         return None
 
     async def get_metrics(self, interface: str) -> WifiMetrics:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         metrics = WifiMetrics(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             interface=interface,
             interface_state="unknown",
         )
@@ -184,7 +184,7 @@ class LinuxWifiAdapter(WifiAdapter):
         metrics.compute_snr()
         return metrics
 
-    async def scan_neighbors(self, interface: str) -> List[NeighborNetwork]:
+    async def scan_neighbors(self, interface: str) -> list[NeighborNetwork]:
         # `iw scan` actively triggers a fresh scan (needs CAP_NET_ADMIN,
         # which is why the systemd unit grants it alongside CAP_NET_RAW -
         # see packaging/systemd/ap-monitor.service). If that's not
@@ -200,12 +200,12 @@ class LinuxWifiAdapter(WifiAdapter):
         return _parse_iw_scan(out)
 
 
-def _apply_nmcli_show(metrics: WifiMetrics, out: Optional[str]) -> None:
+def _apply_nmcli_show(metrics: WifiMetrics, out: str | None) -> None:
     if out is None:
         return
-    ipv4: List[str] = []
-    ipv6: List[str] = []
-    dns: List[str] = []
+    ipv4: list[str] = []
+    ipv6: list[str] = []
+    dns: list[str] = []
     for line in out.strip().splitlines():
         if ":" not in line:
             continue
@@ -232,7 +232,7 @@ def _apply_nmcli_show(metrics: WifiMetrics, out: Optional[str]) -> None:
         metrics.dns_servers = dns
 
 
-def _apply_nmcli_wifi_list(metrics: WifiMetrics, out: Optional[str]) -> None:
+def _apply_nmcli_wifi_list(metrics: WifiMetrics, out: str | None) -> None:
     if out is None:
         return
     for line in out.strip().splitlines():
@@ -252,7 +252,7 @@ def _apply_nmcli_wifi_list(metrics: WifiMetrics, out: Optional[str]) -> None:
         return  # only one row can be the active connection
 
 
-def _apply_iw_link(metrics: WifiMetrics, out: Optional[str]) -> None:
+def _apply_iw_link(metrics: WifiMetrics, out: str | None) -> None:
     if out is None:
         return
     if out.strip().startswith("Not connected"):
@@ -286,7 +286,7 @@ def _apply_iw_link(metrics: WifiMetrics, out: Optional[str]) -> None:
 
 
 def _apply_iw_survey(
-    metrics: WifiMetrics, out: Optional[str], frequency_mhz: Optional[int]
+    metrics: WifiMetrics, out: str | None, frequency_mhz: int | None
 ) -> None:
     """Noise floor, when the driver reports it at all - most consumer WiFi
     chipsets don't expose this via `iw survey dump`, so a None result here
@@ -304,7 +304,7 @@ def _apply_iw_survey(
         return
 
 
-def _parse_iw_scan(out: str) -> List[NeighborNetwork]:
+def _parse_iw_scan(out: str) -> list[NeighborNetwork]:
     """
     Parses `iw scan`/`iw scan dump` output into a neighbor list. `iw`'s
     scan output format has genuine variation across driver/kernel versions
@@ -313,8 +313,8 @@ def _parse_iw_scan(out: str) -> List[NeighborNetwork]:
     when a particular block isn't present, exactly like every other reading
     in this app.
     """
-    text = out[len("BSS ") :] if out.startswith("BSS ") else out
-    neighbors: List[NeighborNetwork] = []
+    text = out.removeprefix("BSS ")
+    neighbors: list[NeighborNetwork] = []
     for block in re.split(r"\nBSS ", text):
         n = _parse_bss_block(block)
         if n is not None:
@@ -322,7 +322,7 @@ def _parse_iw_scan(out: str) -> List[NeighborNetwork]:
     return neighbors
 
 
-def _parse_bss_block(block: str) -> Optional[NeighborNetwork]:
+def _parse_bss_block(block: str) -> NeighborNetwork | None:
     bssid_match = re.match(r"([0-9a-fA-F:]{17})", block)
     if not bssid_match:
         return None
@@ -340,7 +340,7 @@ def _parse_bss_block(block: str) -> Optional[NeighborNetwork]:
     )
 
     signal_match = re.search(r"\n\tsignal:\s*(-?[\d.]+)\s*dBm", block)
-    rssi = int(round(float(signal_match.group(1)))) if signal_match else None
+    rssi = round(float(signal_match.group(1))) if signal_match else None
 
     # PHY mode: presence of each capability block, from newest to oldest -
     # a network only ever advertises the highest standard it supports, but

@@ -3,10 +3,10 @@ the Walk Test results page, plus the endpoints that expose it."""
 
 from __future__ import annotations
 
+from datetime import UTC
 from types import SimpleNamespace as N
 
 import pytest
-
 from app.api import walk_tests as walk_tests_api
 from app.api import wifi as wifi_api
 from app.database import walk_tests_repo, wifi_samples_repo
@@ -133,7 +133,7 @@ def test_input_order_does_not_matter():
 
 
 def test_downsampling_keeps_ap_boundaries():
-    data = [smp(i % 60, "A", -50) for i in range(0, 50)] + [
+    data = [smp(i % 60, "A", -50) for i in range(50)] + [
         smp(i % 60, "B", -50) for i in range(50, 60)
     ]
     # same-minute timestamps are fine; only order matters here
@@ -206,9 +206,9 @@ async def test_unknown_walk_test_is_404(db):
 
 @pytest.mark.asyncio
 async def test_wifi_analysis_endpoint_uses_the_latest_interface_and_window(db):
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for i, bssid in enumerate(["A", "A", "B"]):
         await wifi_samples_repo.insert_sample(
             db,

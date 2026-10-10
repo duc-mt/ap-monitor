@@ -10,7 +10,7 @@ results page is built from. Only the OS-level WiFi read is simulated.
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.monitoring import wifi
 from app.monitoring.wifi.models import WifiMetrics
@@ -29,7 +29,7 @@ def _walk(monkeypatch, *, hide_bssid: bool = False):
         on_b = n > 8
         bssid = None if hide_bssid else (AP_B if on_b else AP_A)
         return WifiMetrics(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             interface="wlan0",
             interface_state="connected",
             ssid="Corp",

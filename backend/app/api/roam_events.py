@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -12,11 +10,11 @@ from app.models.roam_event import RoamEventOut
 router = APIRouter(prefix="/api/roam-events", tags=["roam-events"])
 
 
-@router.get("", response_model=List[RoamEventOut])
+@router.get("", response_model=list[RoamEventOut])
 async def list_roam_events(
-    interface: Optional[str] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
+    interface: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
     limit: int = 200,
     db: aiosqlite.Connection = Depends(get_db),
 ):

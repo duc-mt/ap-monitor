@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from app.database import targets_repo, walk_tests_repo
 from app.models.settings import AppSettingsUpdate
 from app.models.target import TargetCreate

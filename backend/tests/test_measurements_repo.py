@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from app.database import measurements_repo, targets_repo
 from app.models.measurement import MeasurementCreate
 from app.models.target import TargetCreate
@@ -14,7 +13,7 @@ async def test_insert_and_list_measurements(db):
     target = await targets_repo.create_target(
         db, TargetCreate(name="DNS", host="8.8.8.8")
     )
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     await measurements_repo.insert_measurement(
         db,
         MeasurementCreate(
@@ -37,7 +36,7 @@ async def test_latest_measurement_returns_most_recent(db):
     target = await targets_repo.create_target(
         db, TargetCreate(name="DNS", host="8.8.8.8")
     )
-    base = datetime.now(timezone.utc)
+    base = datetime.now(UTC)
     for i, latency in enumerate([10.0, 20.0, 30.0]):
         await measurements_repo.insert_measurement(
             db,
@@ -60,7 +59,7 @@ async def test_recent_results_for_targets(db):
     target = await targets_repo.create_target(
         db, TargetCreate(name="DNS", host="8.8.8.8")
     )
-    base = datetime.now(timezone.utc)
+    base = datetime.now(UTC)
     for i, ok in enumerate([True, False, False]):
         await measurements_repo.insert_measurement(
             db,
@@ -85,8 +84,8 @@ async def test_delete_older_than_retention(db):
     target = await targets_repo.create_target(
         db, TargetCreate(name="DNS", host="8.8.8.8")
     )
-    old_ts = (datetime.now(timezone.utc) - timedelta(days=40)).isoformat()
-    recent_ts = datetime.now(timezone.utc).isoformat()
+    old_ts = (datetime.now(UTC) - timedelta(days=40)).isoformat()
+    recent_ts = datetime.now(UTC).isoformat()
     await measurements_repo.insert_measurement(
         db,
         MeasurementCreate(
@@ -125,7 +124,7 @@ async def test_measurements_cascade_delete_with_target(db):
         db,
         MeasurementCreate(
             target_id=target.id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             latency_ms=1.0,
             packet_loss=0.0,
             jitter_ms=None,

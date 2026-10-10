@@ -30,7 +30,6 @@ import socket
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 from app.monitoring._proc import NO_WINDOW, decode_output
 
@@ -70,7 +69,7 @@ class PingBatchResult:
     attempted: int
     succeeded: int
     latencies: list[float] = field(default_factory=list)
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def loss_pct(self) -> float:
@@ -79,13 +78,13 @@ class PingBatchResult:
         return round((self.attempted - self.succeeded) / self.attempted * 100, 2)
 
     @property
-    def avg_latency_ms(self) -> Optional[float]:
+    def avg_latency_ms(self) -> float | None:
         if not self.latencies:
             return None
         return round(sum(self.latencies) / len(self.latencies), 2)
 
     @property
-    def jitter_ms(self) -> Optional[float]:
+    def jitter_ms(self) -> float | None:
         return compute_jitter(self.latencies)
 
     @property
@@ -93,7 +92,7 @@ class PingBatchResult:
         return self.succeeded > 0
 
 
-def compute_jitter(latencies: list[float]) -> Optional[float]:
+def compute_jitter(latencies: list[float]) -> float | None:
     """Mean absolute difference between consecutive samples (RFC-3550-style,
     simplified for a small per-check batch rather than a running average)."""
     if len(latencies) < 2:
@@ -162,7 +161,7 @@ async def check_icmp(host: str, count: int, timeout: float) -> PingBatchResult:
         stdout_bytes, stderr_bytes = await asyncio.wait_for(
             proc.communicate(), timeout=overall_timeout
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         return PingBatchResult(
@@ -245,19 +244,19 @@ async def check_tcp(
 ) -> PingBatchResult:
     latencies: list[float] = []
     attempted = 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
 
     for _ in range(count):
         attempted += 1
         start = time.monotonic()
         writer = None
         try:
-            reader, writer = await asyncio.wait_for(
+            _reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(host, port), timeout=timeout
             )
             elapsed_ms = (time.monotonic() - start) * 1000
             latencies.append(round(elapsed_ms, 2))
-        except asyncio.TimeoutError:
+        except TimeoutError:
             last_error = "connection timed out"
         except OSError as exc:
             last_error = _classify_os_error(exc)
@@ -271,7 +270,7 @@ async def check_tcp(
                     await asyncio.wait_for(
                         writer.wait_closed(), timeout=min(timeout, 2.0)
                     )
-                except (OSError, asyncio.TimeoutError):
+                except (TimeoutError, OSError):
                     pass
 
     succeeded = len(latencies)
@@ -297,7 +296,7 @@ def _classify_os_error(exc: OSError) -> str:
 
 
 async def run_check(
-    *, host: str, protocol: str, port: Optional[int], count: int, timeout: float
+    *, host: str, protocol: str, port: int | None, count: int, timeout: float
 ) -> PingBatchResult:
     """Entry point used by the scheduler: picks ICMP or TCP and falls back
     to TCP automatically if ICMP turns out to be unusable."""

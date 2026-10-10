@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel
 
 
 class MeasurementOut(BaseModel):
     id: int
     target_id: int
-    target_name: Optional[str] = None
+    target_name: str | None = None
     timestamp: str
-    latency_ms: Optional[float]
+    latency_ms: float | None
     packet_loss: float
-    jitter_ms: Optional[float]
+    jitter_ms: float | None
     success: bool
-    error: Optional[str]
+    error: str | None
 
     model_config = {"from_attributes": True}
 
@@ -22,8 +20,8 @@ class MeasurementOut(BaseModel):
 class MeasurementCreate(BaseModel):
     target_id: int
     timestamp: str
-    latency_ms: Optional[float]
+    latency_ms: float | None
     packet_loss: float
-    jitter_ms: Optional[float]
+    jitter_ms: float | None
     success: bool
-    error: Optional[str] = None
+    error: str | None = None

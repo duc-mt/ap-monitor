@@ -7,10 +7,7 @@ co-channel interference against the live connection.
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pytest
-
 from app.models.wifi_scan import NeighborNetwork
 from app.monitoring import wifi
 from app.monitoring.wifi.base import WifiAdapter
@@ -18,24 +15,24 @@ from app.monitoring.wifi.models import WifiInterfaceInfo, WifiMetrics
 
 
 class _FakeAdapter(WifiAdapter):
-    def __init__(self, current: WifiMetrics, neighbors: List[NeighborNetwork]):
+    def __init__(self, current: WifiMetrics, neighbors: list[NeighborNetwork]):
         self._current = current
         self._neighbors = neighbors
 
-    async def list_interfaces(self) -> List[WifiInterfaceInfo]:
+    async def list_interfaces(self) -> list[WifiInterfaceInfo]:
         return [
             WifiInterfaceInfo(
                 name=self._current.interface, state="connected", is_active=True
             )
         ]
 
-    async def get_active_interface(self) -> Optional[str]:
+    async def get_active_interface(self) -> str | None:
         return self._current.interface
 
     async def get_metrics(self, interface: str) -> WifiMetrics:
         return self._current
 
-    async def scan_neighbors(self, interface: str) -> List[NeighborNetwork]:
+    async def scan_neighbors(self, interface: str) -> list[NeighborNetwork]:
         return self._neighbors
 
 
@@ -124,7 +121,7 @@ async def test_unknown_bssid_source_keeps_all_neighbors():
 @pytest.mark.asyncio
 async def test_no_active_interface_raises_runtime_error():
     class _NoWifiAdapter(_FakeAdapter):
-        async def get_active_interface(self) -> Optional[str]:
+        async def get_active_interface(self) -> str | None:
             return None
 
     wifi._set_adapter_for_testing(

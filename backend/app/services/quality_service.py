@@ -17,8 +17,8 @@ Two related but distinct things live here:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional
+import itertools
+from datetime import UTC, datetime, timedelta
 
 import aiosqlite
 
@@ -28,8 +28,8 @@ from app.models.status import Quality
 
 
 def classify(
-    latency_ms: Optional[float],
-    packet_loss_pct: Optional[float],
+    latency_ms: float | None,
+    packet_loss_pct: float | None,
     thresholds: ClassificationThresholds,
 ) -> Quality:
     # Caller is responsible for reporting "offline" based on overall
@@ -66,25 +66,25 @@ def _linear_score(value: float, zero_at: float, hundred_at: float) -> float:
     return max(0.0, min(100.0, t * 100))
 
 
-def _rssi_subscore(rssi_dbm: Optional[int]) -> Optional[float]:
+def _rssi_subscore(rssi_dbm: int | None) -> float | None:
     if rssi_dbm is None:
         return None
     return _linear_score(rssi_dbm, zero_at=-85, hundred_at=-50)
 
 
-def _latency_subscore(avg_latency_ms: Optional[float]) -> Optional[float]:
+def _latency_subscore(avg_latency_ms: float | None) -> float | None:
     if avg_latency_ms is None:
         return None
     return _linear_score(avg_latency_ms, zero_at=250, hundred_at=20)
 
 
-def _packet_loss_subscore(avg_loss_pct: Optional[float]) -> Optional[float]:
+def _packet_loss_subscore(avg_loss_pct: float | None) -> float | None:
     if avg_loss_pct is None:
         return None
     return _linear_score(avg_loss_pct, zero_at=10, hundred_at=0)
 
 
-def _jitter_subscore(avg_jitter_ms: Optional[float]) -> Optional[float]:
+def _jitter_subscore(avg_jitter_ms: float | None) -> float | None:
     if avg_jitter_ms is None:
         return None
     return _linear_score(avg_jitter_ms, zero_at=60, hundred_at=5)
@@ -104,7 +104,7 @@ async def _count_recent_disconnects(
     )  # list_samples is newest-first; need chronological order
     return sum(
         1
-        for prev, curr in zip(samples, samples[1:])
+        for prev, curr in itertools.pairwise(samples)
         if prev.interface_state == "connected" and curr.interface_state != "connected"
     )
 
@@ -122,13 +122,13 @@ async def compute_wireless_quality_score(
     conn: aiosqlite.Connection,
     interface: str,
     settings: AppSettings,
-) -> Optional[int]:
+) -> int | None:
     """
     Returns None only when there is genuinely nothing to compute from yet
     (no WiFi sample and no connectivity data at all) - a fresh install
     should read as "no score yet", never a fabricated number.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     window_start = (
         now - timedelta(minutes=settings.wireless_quality_window_minutes)
     ).isoformat()
@@ -147,7 +147,7 @@ async def compute_wireless_quality_score(
     avg_loss = agg.get("avg_packet_loss")
     avg_jitter = agg.get("avg_jitter")
 
-    subscores: Dict[str, Optional[float]] = {
+    subscores: dict[str, float | None] = {
         "rssi": _rssi_subscore(rssi),
         "latency": _latency_subscore(avg_latency),
         "packet_loss": _packet_loss_subscore(avg_loss),

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import aiosqlite
 
@@ -37,7 +36,7 @@ async def list_targets(
     return [_row_to_target(r) for r in rows]
 
 
-async def get_target(conn: aiosqlite.Connection, target_id: int) -> Optional[TargetOut]:
+async def get_target(conn: aiosqlite.Connection, target_id: int) -> TargetOut | None:
     async with conn.execute(
         "SELECT * FROM targets WHERE id = ?", (target_id,)
     ) as cursor:
@@ -46,7 +45,7 @@ async def get_target(conn: aiosqlite.Connection, target_id: int) -> Optional[Tar
 
 
 async def create_target(conn: aiosqlite.Connection, data: TargetCreate) -> TargetOut:
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(UTC).isoformat()
     async with write_transaction() as tx:
         cursor = await tx.execute(
             """
@@ -70,7 +69,7 @@ async def create_target(conn: aiosqlite.Connection, data: TargetCreate) -> Targe
 
 async def update_target(
     conn: aiosqlite.Connection, target_id: int, data: TargetUpdate
-) -> Optional[TargetOut]:
+) -> TargetOut | None:
     existing = await get_target(conn, target_id)
     if existing is None:
         return None

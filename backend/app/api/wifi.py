@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,16 +16,16 @@ from app.services import ap_analysis_service
 router = APIRouter(prefix="/api/wifi", tags=["wifi"])
 
 
-@router.get("/interfaces", response_model=List[WifiInterfaceInfo])
+@router.get("/interfaces", response_model=list[WifiInterfaceInfo])
 async def list_interfaces():
     return await wifi.list_wifi_interfaces()
 
 
-@router.get("/samples", response_model=List[WifiMetrics])
+@router.get("/samples", response_model=list[WifiMetrics])
 async def list_samples(
-    interface: Optional[str] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
+    interface: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
     limit: int = 1000,
     db: aiosqlite.Connection = Depends(get_db),
 ):
@@ -40,7 +39,7 @@ async def list_samples(
 @router.get("/analysis", response_model=SignalAnalysis)
 async def wifi_analysis(
     minutes: int = Query(60, ge=1, le=10080, description="Look-back window."),
-    interface: Optional[str] = None,
+    interface: str | None = None,
     weak_threshold_dbm: int = Query(
         ap_analysis_service.DEFAULT_WEAK_THRESHOLD_DBM, ge=-100, le=-30
     ),
@@ -56,7 +55,7 @@ async def wifi_analysis(
         interface = latest[0].interface if latest else None
     samples: list = []
     if interface is not None:
-        start = (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
+        start = (datetime.now(UTC) - timedelta(minutes=minutes)).isoformat()
         samples = await wifi_samples_repo.list_samples(
             db, interface=interface, start=start, limit=50000
         )
@@ -67,7 +66,7 @@ async def wifi_analysis(
 
 @router.post("/scan", response_model=EnvironmentScanResult)
 async def scan_environment(
-    interface: Optional[str] = None, db: aiosqlite.Connection = Depends(get_db)
+    interface: str | None = None, db: aiosqlite.Connection = Depends(get_db)
 ):
     """
     The on-demand "Scan Environment" action - never called on a timer

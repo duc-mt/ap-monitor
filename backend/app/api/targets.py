@@ -50,4 +50,3 @@ async def delete_target(target_id: int, db: aiosqlite.Connection = Depends(get_d
     if not deleted:
         raise HTTPException(status_code=404, detail="Target not found")
     await manager.reload_target(db, target_id)
-    return None

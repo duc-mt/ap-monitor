@@ -25,9 +25,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import List, Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import aiosqlite
 
@@ -45,15 +44,15 @@ logger = logging.getLogger("ap_monitor.walk_test")
 class _ActiveSession:
     walk_test_id: int
     interface: str
-    target_ids: List[int]
-    sample_task: Optional[asyncio.Task] = None
-    ping_task: Optional[asyncio.Task] = None
-    latest_latency_ms: Optional[float] = None
-    latest_packet_loss_pct: Optional[float] = None
-    latest_reachable: Optional[bool] = None
+    target_ids: list[int]
+    sample_task: asyncio.Task | None = None
+    ping_task: asyncio.Task | None = None
+    latest_latency_ms: float | None = None
+    latest_packet_loss_pct: float | None = None
+    latest_reachable: bool | None = None
 
 
-_active: Optional[_ActiveSession] = None
+_active: _ActiveSession | None = None
 
 
 async def start_session(
@@ -161,7 +160,7 @@ async def _sample_loop(conn: aiosqlite.Connection, session: _ActiveSession) -> N
                         "Walk-test %s: roam evaluation failed", session.walk_test_id
                     )
 
-            sample = {"timestamp": datetime.now(timezone.utc).isoformat()}
+            sample = {"timestamp": datetime.now(UTC).isoformat()}
             if metrics is not None:
                 sample.update(
                     {
@@ -232,7 +231,7 @@ def is_recording() -> bool:
     return _active is not None
 
 
-def active_walk_test_id() -> Optional[int]:
+def active_walk_test_id() -> int | None:
     return _active.walk_test_id if _active is not None else None
 
 

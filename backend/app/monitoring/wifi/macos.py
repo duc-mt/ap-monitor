@@ -46,11 +46,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 
-from app.monitoring.wifi.base import WifiAdapter
 from app.models.wifi_scan import NeighborNetwork
+from app.monitoring.wifi.base import WifiAdapter
 from app.monitoring.wifi.models import (
     WifiInterfaceInfo,
     WifiMetrics,
@@ -109,7 +108,7 @@ def _load_corewlan():
     return CoreWLAN
 
 
-async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[str]:
+async def _run(cmd: list[str], timeout: float = _TIMEOUT_SECONDS) -> str | None:
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -120,7 +119,7 @@ async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[st
         return None
     try:
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         return None
@@ -144,7 +143,7 @@ def _enum_name(corewlan, value, table: dict):
 
 
 class MacOSWifiAdapter(WifiAdapter):
-    async def list_interfaces(self) -> List[WifiInterfaceInfo]:
+    async def list_interfaces(self) -> list[WifiInterfaceInfo]:
         try:
             corewlan = _load_corewlan()
         except ImportError:
@@ -161,7 +160,7 @@ class MacOSWifiAdapter(WifiAdapter):
             for name in names
         ]
 
-    async def get_active_interface(self) -> Optional[str]:
+    async def get_active_interface(self) -> str | None:
         try:
             corewlan = _load_corewlan()
         except ImportError:
@@ -176,7 +175,7 @@ class MacOSWifiAdapter(WifiAdapter):
 
     async def get_metrics(self, interface: str) -> WifiMetrics:
         metrics = WifiMetrics(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             interface=interface,
             interface_state="unknown",
         )
@@ -201,7 +200,7 @@ class MacOSWifiAdapter(WifiAdapter):
             metrics.issue = "location_permission"
         return metrics
 
-    async def scan_neighbors(self, interface: str) -> List[NeighborNetwork]:
+    async def scan_neighbors(self, interface: str) -> list[NeighborNetwork]:
         # The one and only place `system_profiler SPAirPortDataType` is
         # allowed to run - it forces an active scan and can block for
         # several seconds, which is exactly why it's banned from the
@@ -331,7 +330,7 @@ class MacOSWifiAdapter(WifiAdapter):
                 metrics.dns_servers = first_servers or servers
 
 
-def _parse_airport_data(out: str) -> List[NeighborNetwork]:
+def _parse_airport_data(out: str) -> list[NeighborNetwork]:
     """
     Parses the "Other Local Wi-Fi Networks:" block from
     `system_profiler SPAirPortDataType`'s indentation-based text output.
@@ -350,8 +349,8 @@ def _parse_airport_data(out: str) -> List[NeighborNetwork]:
     currently-connected one - see NeighborNetwork.bssid's docstring.
     """
     lines = out.splitlines()
-    header_indent: Optional[int] = None
-    header_idx: Optional[int] = None
+    header_indent: int | None = None
+    header_idx: int | None = None
     for i, line in enumerate(lines):
         if line.strip() == "Other Local Wi-Fi Networks:":
             header_indent = len(line) - len(line.lstrip(" "))
@@ -360,9 +359,9 @@ def _parse_airport_data(out: str) -> List[NeighborNetwork]:
     if header_idx is None:
         return []
 
-    neighbors: List[NeighborNetwork] = []
-    current: Optional[dict] = None
-    current_indent: Optional[int] = None
+    neighbors: list[NeighborNetwork] = []
+    current: dict | None = None
+    current_indent: int | None = None
 
     for line in lines[header_idx + 1 :]:
         if not line.strip():
@@ -406,7 +405,7 @@ def _dict_to_neighbor(fields: dict) -> NeighborNetwork:
     signal_match = re.match(r"(-?\d+)\s*dBm", signal_noise)
     rssi = int(signal_match.group(1)) if signal_match else None
 
-    band: Optional[str]
+    band: str | None
     if channel is not None and channel <= 14:
         band = "2.4GHz"
     elif channel is not None:

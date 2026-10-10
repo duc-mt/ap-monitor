@@ -11,11 +11,11 @@ empty dict everywhere else, so call sites can always splat it.
 from __future__ import annotations
 
 import sys
-from typing import Any, Dict
+from typing import Any
 
 _CREATE_NO_WINDOW = 0x08000000
 
-NO_WINDOW: Dict[str, Any] = (
+NO_WINDOW: dict[str, Any] = (
     {"creationflags": _CREATE_NO_WINDOW} if sys.platform == "win32" else {}
 )
 

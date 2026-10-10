@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from app.monitoring import pinger
 
 SUCCESS_OUTPUT = """PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.

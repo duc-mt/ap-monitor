@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -15,9 +13,9 @@ router = APIRouter(prefix="/api/statistics", tags=["statistics"])
 @router.get("", response_model=StatisticsResponse)
 async def get_statistics(
     range: str = "24h",
-    start: Optional[str] = None,
-    end: Optional[str] = None,
-    target_id: Optional[int] = None,
+    start: str | None = None,
+    end: str | None = None,
+    target_id: int | None = None,
     db: aiosqlite.Connection = Depends(get_db),
 ):
     try:

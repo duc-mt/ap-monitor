@@ -4,9 +4,8 @@ import subprocess
 import sys
 
 import pytest
-from click.testing import CliRunner
-
 from ap_monitor_cli import main as cli_main
+from click.testing import CliRunner
 
 ANALYSIS = {
     "summary": {

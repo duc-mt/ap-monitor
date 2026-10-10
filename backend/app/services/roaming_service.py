@@ -38,7 +38,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import aiosqlite
 
@@ -58,14 +57,14 @@ class _InterfaceRoamState:
     # The most recent reading while genuinely stable on one BSSID - this is
     # what "previous" means in a recorded roam event, kept fresh on every
     # matching tick so it's always the freshest pre-roam reading available.
-    stable_reading: Optional[WifiMetrics] = None
+    stable_reading: WifiMetrics | None = None
     # The first reading that showed a *candidate* new BSSID, held until a
     # second consecutive matching reading confirms it (or a different
     # reading replaces/clears it).
-    candidate_reading: Optional[WifiMetrics] = None
+    candidate_reading: WifiMetrics | None = None
 
 
-_states: Dict[str, _InterfaceRoamState] = {}
+_states: dict[str, _InterfaceRoamState] = {}
 
 
 async def evaluate(conn: aiosqlite.Connection, reading: WifiMetrics) -> RoamingState:

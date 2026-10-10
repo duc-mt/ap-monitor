@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from app.monitoring.wifi.linux import LinuxWifiAdapter
 
 NMCLI_DEVICE_STATUS = (

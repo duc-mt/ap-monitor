@@ -41,10 +41,9 @@ def test_classify_respects_custom_thresholds():
 # compute_wireless_quality_score (Stage 12) - against the real db fixture,
 # exercising the actual repo layer rather than mocking it.
 # --------------------------------------------------------------------------
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from app.database import (
     measurements_repo,
     roam_events_repo,
@@ -58,7 +57,7 @@ from app.models.target import TargetCreate
 from app.monitoring.wifi.models import WifiMetrics
 from app.services import quality_service
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 
 
 def _wifi_sample(rssi=-50, state="connected", minutes_ago=0):

@@ -30,7 +30,6 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 import aiosqlite
 
@@ -48,26 +47,26 @@ _POLL_INTERVAL_SECONDS = 1.0
 class _Sample:
     is_gateway: bool
     success: bool
-    latency_ms: Optional[float]
+    latency_ms: float | None
 
 
 @dataclass
 class _Watch:
     event_id: int
     interface: str
-    ssid: Optional[str]
-    new_bssid: Optional[str]
-    gateway_target_id: Optional[int]
-    external_target_ids: List[int]
+    ssid: str | None
+    new_bssid: str | None
+    gateway_target_id: int | None
+    external_target_ids: list[int]
     start_monotonic: float
     timeout_seconds: int
-    gateway_interruption_ms: Optional[float] = None
-    internet_interruption_ms: Optional[float] = None
+    gateway_interruption_ms: float | None = None
+    internet_interruption_ms: float | None = None
     seen_measurement_ids: set = field(default_factory=set)
-    samples: List[_Sample] = field(default_factory=list)
+    samples: list[_Sample] = field(default_factory=list)
 
 
-_active_watches: Dict[int, "_Watch"] = {}
+_active_watches: dict[int, _Watch] = {}
 
 
 async def start_watch(conn: aiosqlite.Connection, event: RoamEventOut) -> None:
@@ -182,7 +181,7 @@ async def _finalize(
         else watch.gateway_interruption_ms
     )
 
-    classification: Optional[RoamClassification]
+    classification: RoamClassification | None
     if not success:
         classification = "failed"
     elif packet_loss_during_pct == 0 and peak_latency_ms is not None:

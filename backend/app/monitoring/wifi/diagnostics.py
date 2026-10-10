@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import shutil
 import sys
-from typing import Optional
 
 from app.models.status import WifiIssue
 from app.monitoring.wifi.models import WifiMetrics
@@ -87,7 +86,7 @@ def issue_for(code: str) -> WifiIssue:
     )
 
 
-def diagnose(metrics: WifiMetrics) -> Optional[WifiIssue]:
+def diagnose(metrics: WifiMetrics) -> WifiIssue | None:
     """The issue (if any) explaining incomplete fields in a successful reading."""
     if metrics.issue:
         return issue_for(metrics.issue)

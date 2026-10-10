@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import aiosqlite
 
@@ -13,8 +12,8 @@ from app.models.measurement import MeasurementCreate
 from app.models.settings import AppSettings
 from app.models.target import TargetOut
 from app.monitoring import wifi
-from app.monitoring.wifi.models import is_connected
 from app.monitoring.pinger import PingBatchResult, run_check
+from app.monitoring.wifi.models import is_connected
 from app.services import (
     connectivity_service,
     notification_service,
@@ -57,11 +56,11 @@ class MonitoringManager:
 
     def __init__(self) -> None:
         self._tasks: dict[int, asyncio.Task] = {}
-        self._cleanup_task: Optional[asyncio.Task] = None
-        self._wifi_task: Optional[asyncio.Task] = None
-        self._wifi_connected: Optional[bool] = None
+        self._cleanup_task: asyncio.Task | None = None
+        self._wifi_task: asyncio.Task | None = None
+        self._wifi_connected: bool | None = None
         self._running = False
-        self._started_at: Optional[datetime] = None
+        self._started_at: datetime | None = None
         self._start_stop_lock = asyncio.Lock()
         self._eval_lock = asyncio.Lock()
 
@@ -70,7 +69,7 @@ class MonitoringManager:
         return self._running
 
     @property
-    def started_at(self) -> Optional[datetime]:
+    def started_at(self) -> datetime | None:
         return self._started_at
 
     async def start(self, conn: aiosqlite.Connection) -> None:
@@ -78,7 +77,7 @@ class MonitoringManager:
             if self._running:
                 return
             self._running = True
-            self._started_at = datetime.now(timezone.utc)
+            self._started_at = datetime.now(UTC)
             targets = await targets_repo.list_targets(conn, enabled_only=True)
             for target in targets:
                 self._spawn(conn, target)
@@ -145,7 +144,7 @@ class MonitoringManager:
                     conn,
                     MeasurementCreate(
                         target_id=current.id,
-                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        timestamp=datetime.now(UTC).isoformat(),
                         latency_ms=result.avg_latency_ms,
                         packet_loss=result.loss_pct,
                         jitter_ms=result.jitter_ms,

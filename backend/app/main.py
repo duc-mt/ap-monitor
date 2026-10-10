@@ -4,7 +4,6 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +20,11 @@ from app.api import (
     statistics,
     status,
     targets,
+)
+from app.api import (
     walk_tests as walk_tests_api,
+)
+from app.api import (
     wifi as wifi_api,
 )
 from app.config import DEV_CORS_ORIGINS, FRONTEND_DIST_DIR
@@ -89,7 +92,7 @@ for router in (
     app.include_router(router)
 
 
-def safe_static_file(root: Path, requested: str) -> Optional[Path]:
+def safe_static_file(root: Path, requested: str) -> Path | None:
     """The file under `root` that `requested` names, or None. Resolves the
     path first so `..` segments (raw or percent-encoded) cannot climb out of
     the built-frontend directory and read arbitrary files."""

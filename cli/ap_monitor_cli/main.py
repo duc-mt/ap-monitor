@@ -10,11 +10,10 @@ dashboard would show.
 from __future__ import annotations
 
 import json as jsonlib
-import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import click
 import httpx
@@ -75,7 +74,7 @@ class ApiClient:
         return self._request("DELETE", path, **kwargs)
 
 
-def print_table(rows: list[dict], columns: Optional[list[str]] = None) -> None:
+def print_table(rows: list[dict], columns: list[str] | None = None) -> None:
     if not rows:
         click.echo("(none)")
         return
@@ -173,7 +172,7 @@ def status(client: ApiClient, as_json: bool):
 
 
 def _fmt_secs(seconds: float) -> str:
-    seconds = int(round(seconds))
+    seconds = round(seconds)
     if seconds < 60:
         return f"{seconds}s"
     minutes, sec = divmod(seconds, 60)
@@ -245,11 +244,11 @@ def _print_analysis(data: dict) -> None:
             )
 
 
-def _fmt_ms(v: Optional[float]) -> str:
+def _fmt_ms(v: float | None) -> str:
     return "—" if v is None else f"{v:.1f} ms"
 
 
-def _fmt_pct(v: Optional[float]) -> str:
+def _fmt_pct(v: float | None) -> str:
     return "—" if v is None else f"{v:.1f}%"
 
 
@@ -543,7 +542,7 @@ def wifi_history(client: ApiClient, minutes: int, weak_dbm: int):
     help="Interface to scan on (default: the currently active one).",
 )
 @click.pass_obj
-def wifi_scan(client: ApiClient, interface: Optional[str]):
+def wifi_scan(client: ApiClient, interface: str | None):
     """
     Actively scan for surrounding networks. On-demand only - this is the
     one command in the whole app that triggers a real radio scan; nothing
@@ -591,7 +590,7 @@ def roam():
 @click.option("--interface", default=None, help="Filter by interface.")
 @click.option("--limit", type=int, default=20, show_default=True)
 @click.pass_obj
-def roam_list(client: ApiClient, interface: Optional[str], limit: int):
+def roam_list(client: ApiClient, interface: str | None, limit: int):
     """List recent confirmed roams, most recent first."""
     params: dict = {"limit": limit}
     if interface:
@@ -704,7 +703,7 @@ def walk_test_show(client: ApiClient, walk_test_id: int, weak_dbm: int):
     help="File to write (default: stdout).",
 )
 @click.pass_obj
-def walk_test_export(client: ApiClient, walk_test_id: int, output: Optional[str]):
+def walk_test_export(client: ApiClient, walk_test_id: int, output: str | None):
     """Export every sample of a walk test as CSV."""
     resp = httpx.get(
         f"{client.base_url}/walk-tests/{walk_test_id}/export", timeout=30.0
@@ -750,7 +749,7 @@ def config():
 @config.command("get")
 @click.argument("key", required=False)
 @click.pass_obj
-def config_get(client: ApiClient, key: Optional[str]):
+def config_get(client: ApiClient, key: str | None):
     """Print all settings, or a single dotted key (e.g. notifications.on_offline)."""
     data = client.get("/settings")
     if key is None:

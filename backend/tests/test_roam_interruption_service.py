@@ -13,7 +13,6 @@ the background task entirely.
 from __future__ import annotations
 
 import pytest
-
 from app.database import roam_events_repo, targets_repo
 from app.models.roam_event import RoamEventCreate
 from app.models.settings import AppSettingsUpdate, NotificationPreferences

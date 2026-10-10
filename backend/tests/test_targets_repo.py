@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from app.database import targets_repo
 from app.models.target import TargetCreate, TargetUpdate
 from app.monitoring import network_info
+from pydantic import ValidationError
 
 
 @pytest.mark.asyncio

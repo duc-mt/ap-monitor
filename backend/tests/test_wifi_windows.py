@@ -13,7 +13,6 @@ app/monitoring/wifi/windows.py.
 from __future__ import annotations
 
 import pytest
-
 from app.monitoring.wifi import windows
 from app.monitoring.wifi.windows import (
     WindowsWifiAdapter,

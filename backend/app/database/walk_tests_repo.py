@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import aiosqlite
 
@@ -87,12 +86,12 @@ async def create_walk_test(
     conn: aiosqlite.Connection,
     *,
     name: str,
-    site: Optional[str],
-    area: Optional[str],
+    site: str | None,
+    area: str | None,
     interface: str,
     target_ids: list[int],
 ) -> WalkTestOut:
-    started_at = datetime.now(timezone.utc).isoformat()
+    started_at = datetime.now(UTC).isoformat()
     async with write_transaction() as tx:
         cursor = await tx.execute(
             "INSERT INTO walk_tests (name, site, area, interface, target_ids, status, started_at) "
@@ -109,8 +108,8 @@ async def create_walk_test(
 
 async def stop_walk_test(
     conn: aiosqlite.Connection, walk_test_id: int
-) -> Optional[WalkTestOut]:
-    ended_at = datetime.now(timezone.utc).isoformat()
+) -> WalkTestOut | None:
+    ended_at = datetime.now(UTC).isoformat()
     async with write_transaction() as tx:
         await tx.execute(
             "UPDATE walk_tests SET status = 'stopped', ended_at = ? WHERE id = ? AND status = 'recording'",
@@ -125,7 +124,7 @@ async def stop_walk_test(
 
 async def get_walk_test(
     conn: aiosqlite.Connection, walk_test_id: int
-) -> Optional[WalkTestOut]:
+) -> WalkTestOut | None:
     async with conn.execute(
         "SELECT * FROM walk_tests WHERE id = ?", (walk_test_id,)
     ) as cursor:

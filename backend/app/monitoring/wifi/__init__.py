@@ -19,10 +19,11 @@ from __future__ import annotations
 
 import sys
 import time
+from datetime import UTC
 from typing import Dict, List, Optional, Tuple
 
-from app.monitoring.wifi.base import WifiAdapter
 from app.models.wifi_scan import EnvironmentScanResult
+from app.monitoring.wifi.base import WifiAdapter
 from app.monitoring.wifi.models import WifiInterfaceInfo, WifiMetrics
 
 _CACHE_TTL_SECONDS = 2.0
@@ -46,8 +47,8 @@ def _build_adapter() -> WifiAdapter:
     )
 
 
-_adapter: Optional[WifiAdapter] = None
-_metrics_cache: Dict[str, Tuple[float, WifiMetrics]] = {}
+_adapter: WifiAdapter | None = None
+_metrics_cache: dict[str, tuple[float, WifiMetrics]] = {}
 
 
 def _get_adapter() -> WifiAdapter:
@@ -57,16 +58,16 @@ def _get_adapter() -> WifiAdapter:
     return _adapter
 
 
-async def list_wifi_interfaces() -> List[WifiInterfaceInfo]:
+async def list_wifi_interfaces() -> list[WifiInterfaceInfo]:
     return await _get_adapter().list_interfaces()
 
 
-async def get_active_wifi_interface() -> Optional[str]:
+async def get_active_wifi_interface() -> str | None:
     return await _get_adapter().get_active_interface()
 
 
 async def get_wifi_metrics(
-    interface: Optional[str] = None, *, use_cache: bool = True
+    interface: str | None = None, *, use_cache: bool = True
 ) -> WifiMetrics:
     """
     A metrics snapshot for `interface`, or the currently active WiFi
@@ -92,7 +93,7 @@ async def get_wifi_metrics(
     return metrics
 
 
-def get_adapter_issue() -> Optional[str]:
+def get_adapter_issue() -> str | None:
     """A machine-readable reason the adapter could not read the radio at all
     (e.g. "location_permission" on Windows), if it knows one. Lets the status
     endpoint say *why* there is no interface instead of just "none found"."""
@@ -107,7 +108,7 @@ def reset_cache() -> None:
     _metrics_cache.clear()
 
 
-async def scan_environment(interface: Optional[str] = None) -> EnvironmentScanResult:
+async def scan_environment(interface: str | None = None) -> EnvironmentScanResult:
     """
     The on-demand "Scan Environment" feature. Never called from the
     background monitoring loop or a walk-test session - only in direct
@@ -137,7 +138,7 @@ async def scan_environment(interface: Optional[str] = None) -> EnvironmentScanRe
         n.is_co_channel = current.channel is not None and n.channel == current.channel
 
     return EnvironmentScanResult(
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         interface=target,
         connected_channel=current.channel,
         connected_band=current.band,
@@ -145,7 +146,7 @@ async def scan_environment(interface: Optional[str] = None) -> EnvironmentScanRe
     )
 
 
-def _set_adapter_for_testing(adapter: Optional[WifiAdapter]) -> None:
+def _set_adapter_for_testing(adapter: WifiAdapter | None) -> None:
     """Test-only seam: inject a fake adapter instead of picking one from
     sys.platform, so adapter-selection logic itself can be exercised
     without needing to run on both a real Linux box and a real Mac."""

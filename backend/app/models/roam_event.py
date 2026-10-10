@@ -5,7 +5,7 @@ the roaming state machine's state vocabulary.
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -28,28 +28,28 @@ RoamConfidence = Literal["high", "medium", "low", "unknown"]
 class RoamEventCreate(BaseModel):
     timestamp: str
     interface: str
-    ssid: Optional[str] = None
+    ssid: str | None = None
 
-    previous_bssid: Optional[str] = None
-    new_bssid: Optional[str] = None
-    previous_frequency_mhz: Optional[int] = None
-    new_frequency_mhz: Optional[int] = None
-    previous_channel: Optional[int] = None
-    new_channel: Optional[int] = None
-    previous_band: Optional[str] = None
-    new_band: Optional[str] = None
-    previous_phy_mode: Optional[str] = None
-    new_phy_mode: Optional[str] = None
-    previous_channel_width_mhz: Optional[int] = None
-    new_channel_width_mhz: Optional[int] = None
-    previous_mcs_index: Optional[int] = None
-    new_mcs_index: Optional[int] = None
-    previous_rssi_dbm: Optional[int] = None
-    new_rssi_dbm: Optional[int] = None
+    previous_bssid: str | None = None
+    new_bssid: str | None = None
+    previous_frequency_mhz: int | None = None
+    new_frequency_mhz: int | None = None
+    previous_channel: int | None = None
+    new_channel: int | None = None
+    previous_band: str | None = None
+    new_band: str | None = None
+    previous_phy_mode: str | None = None
+    new_phy_mode: str | None = None
+    previous_channel_width_mhz: int | None = None
+    new_channel_width_mhz: int | None = None
+    previous_mcs_index: int | None = None
+    new_mcs_index: int | None = None
+    previous_rssi_dbm: int | None = None
+    new_rssi_dbm: int | None = None
 
     ip_changed: bool = False
-    previous_ipv4: Optional[List[str]] = None
-    new_ipv4: Optional[List[str]] = None
+    previous_ipv4: list[str] | None = None
+    new_ipv4: list[str] | None = None
 
 
 class RoamEventOut(RoamEventCreate):
@@ -57,10 +57,10 @@ class RoamEventOut(RoamEventCreate):
 
     # Stage 10 fields - None until the interruption-measurement and
     # classification logic fills them in.
-    gateway_interruption_ms: Optional[float] = None
-    internet_interruption_ms: Optional[float] = None
-    packet_loss_during_pct: Optional[float] = None
-    peak_latency_ms: Optional[float] = None
-    success: Optional[bool] = None
-    classification: Optional[RoamClassification] = None
-    confidence: Optional[RoamConfidence] = None
+    gateway_interruption_ms: float | None = None
+    internet_interruption_ms: float | None = None
+    packet_loss_during_pct: float | None = None
+    peak_latency_ms: float | None = None
+    success: bool | None = None
+    classification: RoamClassification | None = None
+    confidence: RoamConfidence | None = None

@@ -14,7 +14,6 @@ couldn't determine the DNS servers").
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 # Normalized across platforms - each adapter maps its own native
 # interface-state vocabulary onto this small set rather than leaking
@@ -41,39 +40,39 @@ class WifiMetrics:
     interface: str
     interface_state: InterfaceState
 
-    ssid: Optional[str] = None
-    bssid: Optional[str] = None
+    ssid: str | None = None
+    bssid: str | None = None
 
-    frequency_mhz: Optional[int] = None
-    channel: Optional[int] = None
-    band: Optional[str] = None  # "2.4GHz" | "5GHz" | "6GHz" | "Unknown"
+    frequency_mhz: int | None = None
+    channel: int | None = None
+    band: str | None = None  # "2.4GHz" | "5GHz" | "6GHz" | "Unknown"
 
-    rssi_dbm: Optional[int] = None
-    signal_pct: Optional[int] = None
-    noise_floor_dbm: Optional[int] = None
-    snr_db: Optional[int] = None  # exactly rssi_dbm - noise_floor_dbm; never estimated
+    rssi_dbm: int | None = None
+    signal_pct: int | None = None
+    noise_floor_dbm: int | None = None
+    snr_db: int | None = None  # exactly rssi_dbm - noise_floor_dbm; never estimated
 
-    phy_mode: Optional[str] = None  # e.g. "802.11ac"
-    channel_width_mhz: Optional[int] = None  # 20 / 40 / 80 / 160
-    mcs_index: Optional[int] = None
+    phy_mode: str | None = None  # e.g. "802.11ac"
+    channel_width_mhz: int | None = None  # 20 / 40 / 80 / 160
+    mcs_index: int | None = None
 
-    tx_bitrate_mbps: Optional[float] = None
-    rx_bitrate_mbps: Optional[float] = None
+    tx_bitrate_mbps: float | None = None
+    rx_bitrate_mbps: float | None = None
     # Only populated when a platform reports a single generic link rate and
     # can't tell tx/rx apart (e.g. nmcli's one "RATE" column on Linux when
     # `iw` isn't available) - never a duplicate of tx_bitrate_mbps.
-    phy_rate_mbps: Optional[float] = None
+    phy_rate_mbps: float | None = None
 
-    ipv4_addresses: Optional[List[str]] = None
-    ipv6_addresses: Optional[List[str]] = None
-    gateway: Optional[str] = None
-    dns_servers: Optional[List[str]] = None
+    ipv4_addresses: list[str] | None = None
+    ipv6_addresses: list[str] | None = None
+    gateway: str | None = None
+    dns_servers: list[str] | None = None
 
     # Machine-readable reason an adapter could not give a full reading
     # (e.g. "location_permission" when the OS hides SSID/BSSID without
     # Location access). Never persisted; used to explain empty fields in the
     # UI instead of leaving them silently blank. See wifi/diagnostics.py.
-    issue: Optional[str] = None
+    issue: str | None = None
 
     def compute_snr(self) -> None:
         """Fill snr_db from rssi/noise - only when both are real readings."""
@@ -81,7 +80,7 @@ class WifiMetrics:
             self.snr_db = self.rssi_dbm - self.noise_floor_dbm
 
 
-def is_connected(metrics: "WifiMetrics") -> Optional[bool]:
+def is_connected(metrics: WifiMetrics) -> bool | None:
     """True/False for a definite reading, None when the adapter could not
     tell ("unknown"). Callers must not turn None into False: a monitor that
     cannot read the radio must say so, not claim the WiFi is down."""
@@ -92,7 +91,7 @@ def is_connected(metrics: "WifiMetrics") -> Optional[bool]:
     return False
 
 
-def band_from_frequency(freq_mhz: Optional[int]) -> Optional[str]:
+def band_from_frequency(freq_mhz: int | None) -> str | None:
     """Shared by every adapter so band classification is identical across platforms."""
     if freq_mhz is None:
         return None
@@ -105,7 +104,7 @@ def band_from_frequency(freq_mhz: Optional[int]) -> Optional[str]:
     return "Unknown"
 
 
-def channel_from_frequency(freq_mhz: Optional[int]) -> Optional[int]:
+def channel_from_frequency(freq_mhz: int | None) -> int | None:
     """Standard WiFi channel-numbering formulas, used wherever a scan result
     doesn't state its channel directly (e.g. Linux `iw scan` output, which
     only prints a legacy 'DS Parameter set: channel N' line on 2.4GHz)."""
@@ -122,7 +121,7 @@ def channel_from_frequency(freq_mhz: Optional[int]) -> Optional[int]:
     return None
 
 
-def channel_from_frequency(freq_mhz: Optional[int]) -> Optional[int]:
+def channel_from_frequency(freq_mhz: int | None) -> int | None:
     """Standard channel-numbering formulas, used when a scan result gives a
     frequency but not an explicit channel number (common for 5GHz/6GHz
     entries in `iw scan` output)."""
@@ -145,14 +144,14 @@ class NeighborNetwork:
     Never populated from the background monitoring loop - only from an
     explicit, user-triggered scan_environment() call."""
 
-    ssid: Optional[str] = None
-    bssid: Optional[str] = None
-    channel: Optional[int] = None
-    band: Optional[str] = None
-    channel_width_mhz: Optional[int] = None
-    phy_mode: Optional[str] = None
-    security: Optional[str] = None
-    rssi_dbm: Optional[int] = None
+    ssid: str | None = None
+    bssid: str | None = None
+    channel: int | None = None
+    band: str | None = None
+    channel_width_mhz: int | None = None
+    phy_mode: str | None = None
+    security: str | None = None
+    rssi_dbm: int | None = None
     # Filled in by app.monitoring.wifi.compute_co_channel_overlap() after the
     # scan, by comparing against the *current* connection - never set by an
     # adapter itself, which has no opinion on what "current" means.

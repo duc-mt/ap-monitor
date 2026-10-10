@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 import aiosqlite
 
@@ -115,7 +114,7 @@ async def create_roam_event(
 
 async def get_roam_event(
     conn: aiosqlite.Connection, event_id: int
-) -> Optional[RoamEventOut]:
+) -> RoamEventOut | None:
     async with conn.execute(
         "SELECT * FROM roam_events WHERE id = ?", (event_id,)
     ) as cursor:
@@ -127,13 +126,13 @@ async def update_interruption_result(
     conn: aiosqlite.Connection,
     event_id: int,
     *,
-    gateway_interruption_ms: Optional[float],
-    internet_interruption_ms: Optional[float],
-    packet_loss_during_pct: Optional[float],
-    peak_latency_ms: Optional[float],
-    success: Optional[bool],
-    classification: Optional[str],
-    confidence: Optional[str],
+    gateway_interruption_ms: float | None,
+    internet_interruption_ms: float | None,
+    packet_loss_during_pct: float | None,
+    peak_latency_ms: float | None,
+    success: bool | None,
+    classification: str | None,
+    confidence: str | None,
 ) -> None:
     """Fills in the Stage-10 columns on an already-created roam event, once
     the interruption watch (app.services.roam_interruption_service) has
@@ -164,9 +163,9 @@ async def update_interruption_result(
 async def list_roam_events(
     conn: aiosqlite.Connection,
     *,
-    interface: Optional[str] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
+    interface: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
     limit: int = 200,
 ) -> list[RoamEventOut]:
     query = "SELECT * FROM roam_events WHERE 1=1"

@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from datetime import datetime, timezone
-from typing import Any, Iterable, List, Optional
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from typing import Any
 
 from app.models.wifi_analysis import (
     ApChange,
@@ -32,7 +33,7 @@ DEFAULT_MAX_POINTS = 1200
 
 def _parse(ts: str) -> datetime:
     dt = datetime.fromisoformat(ts)
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 def _is_connected(sample: Any) -> bool:
@@ -44,7 +45,7 @@ def _is_connected(sample: Any) -> bool:
     return state in (None, "unknown") and getattr(sample, "rssi_dbm", None) is not None
 
 
-def _avg(values: List[float]) -> Optional[float]:
+def _avg(values: list[float]) -> float | None:
     return round(sum(values) / len(values), 1) if values else None
 
 
@@ -54,12 +55,12 @@ class _Seg:
         self.ssid = getattr(sample, "ssid", None)
         self.start_t = self.end_t = t
         self.start = self.end = sample.timestamp
-        self.rssis: List[int] = []
+        self.rssis: list[int] = []
         self.channels: Counter = Counter()
         self.bands: Counter = Counter()
         self.count = 0
-        self.last_rssi: Optional[int] = None
-        self.first_rssi: Optional[int] = None
+        self.last_rssi: int | None = None
+        self.first_rssi: int | None = None
         self.add(sample, t)
 
     def add(self, sample: Any, t: datetime) -> None:
@@ -115,15 +116,15 @@ def analyze(
             points=[],
         )
 
-    segs: List[_Seg] = []
-    gap_before: List[bool] = []  # True if a disconnected sample preceded segs[i]
-    cur: Optional[_Seg] = None
+    segs: list[_Seg] = []
+    gap_before: list[bool] = []  # True if a disconnected sample preceded segs[i]
+    cur: _Seg | None = None
     gap = False
     boundary_idx: set = set()
-    point_models: List[SignalPoint] = []
+    point_models: list[SignalPoint] = []
 
-    weak: List[WeakStretch] = []
-    weak_run: List[tuple] = []  # (t, sample)
+    weak: list[WeakStretch] = []
+    weak_run: list[tuple] = []  # (t, sample)
 
     def flush_weak() -> None:
         if len(weak_run) >= 2:
@@ -141,9 +142,9 @@ def analyze(
             )
         weak_run.clear()
 
-    connected_rssis: List[int] = []
-    snrs: List[float] = []
-    rates: List[float] = []
+    connected_rssis: list[int] = []
+    snrs: list[float] = []
+    rates: list[float] = []
     connected_count = 0
     weak_count = 0
     rssi_count = 0
@@ -201,7 +202,7 @@ def analyze(
     flush_weak()
 
     # AP changes: adjacent segments with two real, different BSSIDs.
-    changes: List[ApChange] = []
+    changes: list[ApChange] = []
     for idx in range(1, len(segs)):
         prev, nxt = segs[idx - 1], segs[idx]
         if prev.bssid and nxt.bssid and prev.bssid != nxt.bssid:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import aiosqlite
 
@@ -13,7 +12,7 @@ def _row_to_measurement(row: aiosqlite.Row) -> MeasurementOut:
     return MeasurementOut(
         id=row["id"],
         target_id=row["target_id"],
-        target_name=row["name"] if "name" in row.keys() else None,
+        target_name=row.get("name", None),
         timestamp=row["timestamp"],
         latency_ms=row["latency_ms"],
         packet_loss=row["packet_loss"],
@@ -48,9 +47,9 @@ async def insert_measurement(
 async def list_measurements(
     conn: aiosqlite.Connection,
     *,
-    target_id: Optional[int] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
+    target_id: int | None = None,
+    start: str | None = None,
+    end: str | None = None,
     limit: int = 1000,
 ) -> list[MeasurementOut]:
     query = (
@@ -76,7 +75,7 @@ async def list_measurements(
 
 async def latest_measurement(
     conn: aiosqlite.Connection, target_id: int
-) -> Optional[MeasurementOut]:
+) -> MeasurementOut | None:
     async with conn.execute(
         "SELECT m.*, t.name FROM measurements m JOIN targets t ON t.id = m.target_id "
         "WHERE m.target_id = ? ORDER BY m.timestamp DESC LIMIT 1",
@@ -117,7 +116,7 @@ async def recent_results_for_targets(
 
 
 async def latencies_in_range(
-    conn: aiosqlite.Connection, *, target_id: Optional[int], start: str, end: str
+    conn: aiosqlite.Connection, *, target_id: int | None, start: str, end: str
 ) -> list[float]:
     query = "SELECT latency_ms FROM measurements WHERE timestamp BETWEEN ? AND ? AND latency_ms IS NOT NULL"
     params: list = [start, end]
@@ -130,7 +129,7 @@ async def latencies_in_range(
 
 
 async def aggregate_in_range(
-    conn: aiosqlite.Connection, *, target_id: Optional[int], start: str, end: str
+    conn: aiosqlite.Connection, *, target_id: int | None, start: str, end: str
 ) -> dict:
     query = """
         SELECT
@@ -151,14 +150,14 @@ async def aggregate_in_range(
     return dict(row) if row else {}
 
 
-async def earliest_timestamp(conn: aiosqlite.Connection) -> Optional[str]:
+async def earliest_timestamp(conn: aiosqlite.Connection) -> str | None:
     async with conn.execute("SELECT MIN(timestamp) AS ts FROM measurements") as cursor:
         row = await cursor.fetchone()
     return row["ts"] if row else None
 
 
 async def delete_older_than(conn: aiosqlite.Connection, retention_days: int) -> int:
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(days=retention_days)).isoformat()
     async with write_transaction() as tx:
         cursor = await tx.execute(
             "DELETE FROM measurements WHERE timestamp < ?", (cutoff,)

@@ -18,15 +18,13 @@ import os
 
 os.environ["AP_MONITOR_AUTOSTART"] = "0"
 
-import asyncio
 from pathlib import Path
 
 import pytest
 import pytest_asyncio
-
 from app.database import connection as db_connection
-from app.monitoring import wifi
 from app.monitoring import scheduler as monitoring_scheduler
+from app.monitoring import wifi
 from app.monitoring.pinger import PingBatchResult
 from app.services import (
     connectivity_service,
@@ -86,8 +84,8 @@ def client(tmp_path: Path, monkeypatch):
     roam_interruption_service.reset_state()
     walk_test_service.reset_state()
 
-    from fastapi.testclient import TestClient
     from app.main import app
+    from fastapi.testclient import TestClient
 
     with TestClient(app) as test_client:
         yield test_client

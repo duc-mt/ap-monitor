@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from app.database import targets_repo
 from app.database.measurements_repo import insert_measurement
 from app.models.measurement import MeasurementCreate
@@ -34,7 +33,7 @@ def test_resolve_range_custom_requires_bounds():
 
 
 def test_resolve_range_custom_rejects_backwards_range():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with pytest.raises(ValueError):
         statistics_service.resolve_range(
             "custom", now.isoformat(), (now - timedelta(hours=1)).isoformat()
@@ -51,7 +50,7 @@ async def test_compute_statistics_end_to_end(db):
     target = await targets_repo.create_target(
         db, TargetCreate(name="Test", host="1.1.1.1", protocol="icmp")
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     samples = [10.0, 20.0, 30.0, 40.0, 50.0]
     for i, latency in enumerate(samples):

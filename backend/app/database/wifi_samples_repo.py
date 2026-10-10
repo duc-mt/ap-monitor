@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import aiosqlite
 
@@ -101,7 +100,7 @@ async def insert_sample(conn: aiosqlite.Connection, m: WifiMetrics) -> int:
 
 async def latest_sample(
     conn: aiosqlite.Connection, interface: str
-) -> Optional[WifiMetrics]:
+) -> WifiMetrics | None:
     async with conn.execute(
         "SELECT * FROM wifi_samples WHERE interface = ? ORDER BY timestamp DESC LIMIT 1",
         (interface,),
@@ -113,9 +112,9 @@ async def latest_sample(
 async def list_samples(
     conn: aiosqlite.Connection,
     *,
-    interface: Optional[str] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
+    interface: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
     limit: int = 1000,
 ) -> list[WifiMetrics]:
     query = "SELECT * FROM wifi_samples WHERE 1=1"
@@ -137,7 +136,7 @@ async def list_samples(
 
 
 async def delete_older_than(conn: aiosqlite.Connection, retention_days: int) -> int:
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(days=retention_days)).isoformat()
     async with write_transaction() as tx:
         cursor = await tx.execute(
             "DELETE FROM wifi_samples WHERE timestamp < ?", (cutoff,)

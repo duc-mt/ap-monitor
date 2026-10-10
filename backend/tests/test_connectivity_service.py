@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
-
 from app.database import measurements_repo, targets_repo
 from app.models.measurement import MeasurementCreate
 from app.models.settings import AppSettings
@@ -16,7 +15,7 @@ async def _measure(db, target_id, *, success: bool):
         db,
         MeasurementCreate(
             target_id=target_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             latency_ms=10.0 if success else None,
             packet_loss=0.0 if success else 100.0,
             jitter_ms=None,

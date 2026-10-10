@@ -40,8 +40,7 @@ import asyncio
 import logging
 import re
 import time
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from datetime import UTC, datetime
 
 from app.models.wifi_scan import NeighborNetwork
 from app.monitoring._proc import NO_WINDOW, decode_output
@@ -78,12 +77,12 @@ def rssi_from_quality(percent: int) -> int:
     return round(max(0, min(100, percent)) / 2 - 100)
 
 
-def _norm_band(value: str) -> Optional[str]:
+def _norm_band(value: str) -> str | None:
     m = _BAND_RE.match(value.strip())
     return f"{m.group(1)}GHz" if m else None
 
 
-def _frequency(channel: Optional[int], band: Optional[str]) -> Optional[int]:
+def _frequency(channel: int | None, band: str | None) -> int | None:
     if channel is None or band is None:
         return None
     if band == "2.4GHz":
@@ -95,7 +94,7 @@ def _frequency(channel: Optional[int], band: Optional[str]) -> Optional[int]:
     return None
 
 
-def _band_from_channel(channel: Optional[int]) -> Optional[str]:
+def _band_from_channel(channel: int | None) -> str | None:
     """Only used when netsh printed no Band line (older builds). 6GHz channel
     numbers overlap the other bands, so this can only tell 2.4 from 5."""
     if channel is None:
@@ -115,11 +114,11 @@ def _is_location_blocked(text: str) -> bool:
 # ---------------------------------------------------------------------------
 # Parsing (pure functions - exercised directly by the unit tests)
 # ---------------------------------------------------------------------------
-def _pairs(text: str, *, keep_empty: bool = False) -> List[Tuple[str, str]]:
+def _pairs(text: str, *, keep_empty: bool = False) -> list[tuple[str, str]]:
     """`key : value` lines in order. Empty values are dropped unless asked
     for: a hidden network is printed as a bare `SSID 2 :`, and losing that
     line would let it inherit the previous network's name."""
-    out: List[Tuple[str, str]] = []
+    out: list[tuple[str, str]] = []
     for line in text.splitlines():
         m = _PAIR_RE.match(line)
         if m and (keep_empty or m.group(2) != ""):
@@ -127,11 +126,11 @@ def _pairs(text: str, *, keep_empty: bool = False) -> List[Tuple[str, str]]:
     return out
 
 
-def _split_blocks(pairs: List[Tuple[str, str]]) -> List[List[Tuple[str, str]]]:
+def _split_blocks(pairs: list[tuple[str, str]]) -> list[list[tuple[str, str]]]:
     """One block per interface: a new block begins whenever a key repeats."""
-    blocks: List[List[Tuple[str, str]]] = []
+    blocks: list[list[tuple[str, str]]] = []
     seen: set = set()
-    cur: List[Tuple[str, str]] = []
+    cur: list[tuple[str, str]] = []
     for key, value in pairs:
         k = key.lower()
         if k in seen and cur:
@@ -144,9 +143,9 @@ def _split_blocks(pairs: List[Tuple[str, str]]) -> List[List[Tuple[str, str]]]:
     return blocks
 
 
-def _parse_block(block: List[Tuple[str, str]]) -> Optional[Dict[str, object]]:
+def _parse_block(block: list[tuple[str, str]]) -> dict[str, object] | None:
     by_key = {k.lower(): v for k, v in block}
-    info: Dict[str, object] = {}
+    info: dict[str, object] = {}
 
     # --- English labels (authoritative when present) ---------------------
     info["name"] = by_key.get("name")
@@ -208,7 +207,7 @@ def _parse_block(block: List[Tuple[str, str]]) -> Optional[Dict[str, object]]:
     return info
 
 
-def parse_interfaces(text: str) -> List[Dict[str, object]]:
+def parse_interfaces(text: str) -> list[dict[str, object]]:
     """Parse `netsh wlan show interfaces` into one dict per interface."""
     out = []
     for block in _split_blocks(_pairs(text)):
@@ -218,9 +217,9 @@ def parse_interfaces(text: str) -> List[Dict[str, object]]:
     return out
 
 
-def metrics_from_interface(info: Dict[str, object], interface: str) -> WifiMetrics:
+def metrics_from_interface(info: dict[str, object], interface: str) -> WifiMetrics:
     metrics = WifiMetrics(
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         interface=interface,
         interface_state=str(info.get("state") or "unknown"),
     )
@@ -244,13 +243,13 @@ def metrics_from_interface(info: Dict[str, object], interface: str) -> WifiMetri
     return metrics
 
 
-def parse_networks(text: str) -> List[NeighborNetwork]:
+def parse_networks(text: str) -> list[NeighborNetwork]:
     """Parse `netsh wlan show networks mode=bssid` into one entry per BSSID."""
     pairs = _pairs(text, keep_empty=True)
-    out: List[NeighborNetwork] = []
-    ssid: Optional[str] = None
-    security: Optional[str] = None
-    cur: Optional[NeighborNetwork] = None
+    out: list[NeighborNetwork] = []
+    ssid: str | None = None
+    security: str | None = None
+    cur: NeighborNetwork | None = None
     prev_was_band = False
 
     def flush() -> None:
@@ -291,18 +290,20 @@ def parse_networks(text: str) -> List[NeighborNetwork]:
             cur.band = _norm_band(v)
             prev_was_band = True
             continue
-        elif k == "channel" and _INT_RE.match(v):
-            cur.channel = int(v)
-        elif prev_was_band and cur.channel is None and _INT_RE.match(v):
+        elif (
+            k == "channel"
+            and _INT_RE.match(v)
+            or prev_was_band
+            and cur.channel is None
+            and _INT_RE.match(v)
+        ):
             cur.channel = int(v)
         prev_was_band = False
     flush()
     return out
 
 
-def parse_ipconfig(
-    text: str, interface: str
-) -> Tuple[Optional[List[str]], Optional[str]]:
+def parse_ipconfig(text: str, interface: str) -> tuple[list[str] | None, str | None]:
     """(IPv4 addresses, default gateway) for `interface` from plain
     `ipconfig` output. Sections are found by the adapter name in the
     (unindented) header line, which is not localized; within a section the
@@ -310,7 +311,7 @@ def parse_ipconfig(
     with 255.), then default gateway - in the order ipconfig prints them."""
     wanted = interface.strip().lower()
     in_section = False
-    values: List[str] = []
+    values: list[str] = []
     for line in text.splitlines():
         if line and not line[0].isspace():
             header = line.strip().rstrip(":").strip().lower()
@@ -325,7 +326,7 @@ def parse_ipconfig(
     if not values:
         return None, None
     address = values[0]
-    gateway: Optional[str] = None
+    gateway: str | None = None
     if len(values) >= 3 and values[1].startswith("255."):
         gateway = values[2]
     return [address], gateway
@@ -334,7 +335,7 @@ def parse_ipconfig(
 # ---------------------------------------------------------------------------
 # Adapter
 # ---------------------------------------------------------------------------
-async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[str]:
+async def _run(cmd: list[str], timeout: float = _TIMEOUT_SECONDS) -> str | None:
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -344,7 +345,7 @@ async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[st
         )
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         return decode_output(stdout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("%s timed out", cmd[0])
     except (FileNotFoundError, OSError) as exc:
         logger.warning("could not run %s: %s", cmd[0], exc)
@@ -355,10 +356,10 @@ class WindowsWifiAdapter(WifiAdapter):
     def __init__(self) -> None:
         # Set when the last read failed for a reason the user can fix; read by
         # wifi.get_adapter_issue() so "no interface" can say *why*.
-        self.last_issue: Optional[str] = None
-        self._ip_cache: Dict[str, Tuple[float, Optional[List[str]], Optional[str]]] = {}
+        self.last_issue: str | None = None
+        self._ip_cache: dict[str, tuple[float, list[str] | None, str | None]] = {}
 
-    async def _read_interfaces(self) -> Optional[List[Dict[str, object]]]:
+    async def _read_interfaces(self) -> list[dict[str, object]] | None:
         out = await _run(["netsh", "wlan", "show", "interfaces"])
         if out is None:
             self.last_issue = "adapter_error"
@@ -369,7 +370,7 @@ class WindowsWifiAdapter(WifiAdapter):
         self.last_issue = None
         return parse_interfaces(out)
 
-    async def list_interfaces(self) -> List[WifiInterfaceInfo]:
+    async def list_interfaces(self) -> list[WifiInterfaceInfo]:
         infos = await self._read_interfaces() or []
         return [
             WifiInterfaceInfo(
@@ -380,7 +381,7 @@ class WindowsWifiAdapter(WifiAdapter):
             for i in infos
         ]
 
-    async def get_active_interface(self) -> Optional[str]:
+    async def get_active_interface(self) -> str | None:
         infos = await self._read_interfaces()
         if not infos:
             return None
@@ -391,7 +392,7 @@ class WindowsWifiAdapter(WifiAdapter):
         infos = await self._read_interfaces()
         if infos is None:
             metrics = WifiMetrics(
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 interface=interface,
                 interface_state="unknown",
                 issue=self.last_issue,
@@ -402,7 +403,7 @@ class WindowsWifiAdapter(WifiAdapter):
         )
         if match is None:
             return WifiMetrics(
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 interface=interface,
                 interface_state="unavailable",
             )
@@ -424,7 +425,7 @@ class WindowsWifiAdapter(WifiAdapter):
         self._ip_cache[interface] = (time.monotonic(), addrs, gateway)
         metrics.ipv4_addresses, metrics.gateway = addrs, gateway
 
-    async def scan_neighbors(self, interface: str) -> List[NeighborNetwork]:
+    async def scan_neighbors(self, interface: str) -> list[NeighborNetwork]:
         out = await _run(
             ["netsh", "wlan", "show", "networks", "mode=bssid"],
             timeout=_SCAN_TIMEOUT_SECONDS,

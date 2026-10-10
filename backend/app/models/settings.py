@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -107,19 +107,19 @@ class AppSettings(BaseModel):
 class AppSettingsUpdate(BaseModel):
     """All fields optional so PUT /api/settings can be a partial patch."""
 
-    ping_timeout_seconds: Optional[float] = Field(default=None, ge=0.2, le=30)
-    pings_per_check: Optional[int] = Field(default=None, ge=1, le=10)
-    default_target_interval_seconds: Optional[int] = Field(default=None, ge=1, le=3600)
-    wifi_poll_interval_seconds: Optional[int] = Field(default=None, ge=1, le=300)
-    roam_watch_timeout_seconds: Optional[int] = Field(default=None, ge=5, le=300)
-    walk_test_sample_interval_ms: Optional[int] = Field(default=None, ge=100, le=5000)
-    wireless_quality_window_minutes: Optional[int] = Field(default=None, ge=5, le=1440)
-    latency_warning_threshold_ms: Optional[float] = None
-    packet_loss_warning_threshold_pct: Optional[float] = None
-    internet_quorum: Optional[Literal["any", "all"]] = None
-    notifications: Optional[NotificationPreferences] = None
-    classification: Optional[ClassificationThresholds] = None
-    data_retention_days: Optional[int] = Field(default=None, ge=1, le=3650)
-    start_on_boot: Optional[bool] = None
-    theme: Optional[Literal["light", "dark", "system"]] = None
-    language: Optional[str] = None
+    ping_timeout_seconds: float | None = Field(default=None, ge=0.2, le=30)
+    pings_per_check: int | None = Field(default=None, ge=1, le=10)
+    default_target_interval_seconds: int | None = Field(default=None, ge=1, le=3600)
+    wifi_poll_interval_seconds: int | None = Field(default=None, ge=1, le=300)
+    roam_watch_timeout_seconds: int | None = Field(default=None, ge=5, le=300)
+    walk_test_sample_interval_ms: int | None = Field(default=None, ge=100, le=5000)
+    wireless_quality_window_minutes: int | None = Field(default=None, ge=5, le=1440)
+    latency_warning_threshold_ms: float | None = None
+    packet_loss_warning_threshold_pct: float | None = None
+    internet_quorum: Literal["any", "all"] | None = None
+    notifications: NotificationPreferences | None = None
+    classification: ClassificationThresholds | None = None
+    data_retention_days: int | None = Field(default=None, ge=1, le=3650)
+    start_on_boot: bool | None = None
+    theme: Literal["light", "dark", "system"] | None = None
+    language: str | None = None

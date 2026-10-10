@@ -9,7 +9,6 @@ check the resulting states and recorded roam_events rows against a real
 from __future__ import annotations
 
 import pytest
-
 from app.database import roam_events_repo
 from app.monitoring.wifi.models import WifiMetrics
 from app.services import roaming_service

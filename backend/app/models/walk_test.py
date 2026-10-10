@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -9,22 +9,22 @@ WalkTestStatus = Literal["recording", "stopped"]
 
 class WalkTestCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    site: Optional[str] = Field(default=None, max_length=100)
-    area: Optional[str] = Field(default=None, max_length=100)
+    site: str | None = Field(default=None, max_length=100)
+    area: str | None = Field(default=None, max_length=100)
     interface: str
-    target_ids: List[int] = Field(default_factory=list)
+    target_ids: list[int] = Field(default_factory=list)
 
 
 class WalkTestOut(BaseModel):
     id: int
     name: str
-    site: Optional[str] = None
-    area: Optional[str] = None
+    site: str | None = None
+    area: str | None = None
     interface: str
-    target_ids: List[int]
+    target_ids: list[int]
     status: WalkTestStatus
     started_at: str
-    ended_at: Optional[str] = None
+    ended_at: str | None = None
     sample_count: int = 0
 
 
@@ -33,25 +33,25 @@ class WalkTestSampleOut(BaseModel):
     walk_test_id: int
     timestamp: str
 
-    interface_state: Optional[str] = None
-    ssid: Optional[str] = None
-    bssid: Optional[str] = None
-    frequency_mhz: Optional[int] = None
-    channel: Optional[int] = None
-    band: Optional[str] = None
-    rssi_dbm: Optional[int] = None
-    signal_pct: Optional[int] = None
-    noise_floor_dbm: Optional[int] = None
-    snr_db: Optional[int] = None
-    phy_mode: Optional[str] = None
-    channel_width_mhz: Optional[int] = None
-    mcs_index: Optional[int] = None
-    tx_bitrate_mbps: Optional[float] = None
-    rx_bitrate_mbps: Optional[float] = None
-    phy_rate_mbps: Optional[float] = None
+    interface_state: str | None = None
+    ssid: str | None = None
+    bssid: str | None = None
+    frequency_mhz: int | None = None
+    channel: int | None = None
+    band: str | None = None
+    rssi_dbm: int | None = None
+    signal_pct: int | None = None
+    noise_floor_dbm: int | None = None
+    snr_db: int | None = None
+    phy_mode: str | None = None
+    channel_width_mhz: int | None = None
+    mcs_index: int | None = None
+    tx_bitrate_mbps: float | None = None
+    rx_bitrate_mbps: float | None = None
+    phy_rate_mbps: float | None = None
 
     # None across all three when the session had no target_ids selected -
     # walk-test mode never requires internet connectivity to run.
-    latency_ms: Optional[float] = None
-    packet_loss_pct: Optional[float] = None
-    reachable: Optional[bool] = None
+    latency_ms: float | None = None
+    packet_loss_pct: float | None = None
+    reachable: bool | None = None

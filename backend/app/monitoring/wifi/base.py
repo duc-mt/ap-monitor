@@ -18,7 +18,6 @@ and killing the monitoring loop for the whole app.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
 
 from app.models.wifi_scan import NeighborNetwork
 from app.monitoring.wifi.models import WifiInterfaceInfo, WifiMetrics
@@ -26,11 +25,11 @@ from app.monitoring.wifi.models import WifiInterfaceInfo, WifiMetrics
 
 class WifiAdapter(ABC):
     @abstractmethod
-    async def list_interfaces(self) -> List[WifiInterfaceInfo]:
+    async def list_interfaces(self) -> list[WifiInterfaceInfo]:
         """Every WiFi-capable interface on the system, connected or not."""
 
     @abstractmethod
-    async def get_active_interface(self) -> Optional[str]:
+    async def get_active_interface(self) -> str | None:
         """The interface name currently carrying the active WiFi connection, if any."""
 
     @abstractmethod
@@ -47,7 +46,7 @@ class WifiAdapter(ABC):
         """
 
     @abstractmethod
-    async def scan_neighbors(self, interface: str) -> List[NeighborNetwork]:
+    async def scan_neighbors(self, interface: str) -> list[NeighborNetwork]:
         """
         Actively scans for surrounding networks. Only ever called from the
         explicit, user-triggered "Scan Environment" action - never from the

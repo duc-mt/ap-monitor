@@ -34,7 +34,6 @@ richer named-state model below, rather than an outage span table.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import aiosqlite
 
@@ -45,7 +44,7 @@ from app.services import notification_service
 
 logger = logging.getLogger("ap_monitor.connectivity")
 
-_previous_state: Optional[ConnectivityState] = None
+_previous_state: ConnectivityState | None = None
 
 # States in which the app is meaningfully "not working" - used to decide
 # when to fire the offline-style notification (any transition into one of
@@ -57,7 +56,7 @@ async def compute_status(
     conn: aiosqlite.Connection,
     settings: AppSettings,
     *,
-    wifi_connected: Optional[bool] = None,
+    wifi_connected: bool | None = None,
 ) -> ConnectivityStatus:
     """
     The pure computation behind evaluate() below, with no side effects -
@@ -74,7 +73,7 @@ async def compute_status(
     gateway_target = next((t for t in targets if t.is_gateway), None)
     external_targets = [t for t in targets if not t.is_gateway]
 
-    gateway_reachable: Optional[bool] = None
+    gateway_reachable: bool | None = None
     if gateway_target is not None:
         m = latest_by_target.get(gateway_target.id)
         gateway_reachable = m.success if m is not None else None
@@ -102,7 +101,7 @@ async def evaluate(
     conn: aiosqlite.Connection,
     settings: AppSettings,
     *,
-    wifi_connected: Optional[bool] = None,
+    wifi_connected: bool | None = None,
 ) -> ConnectivityStatus:
     """
     Computes the status (see compute_status() above) AND fires a
@@ -132,7 +131,7 @@ async def evaluate(
 
 def _derive_internet_state(
     external_targets, latest_by_target, quorum: str
-) -> Optional[str]:
+) -> str | None:
     with_data = [t for t in external_targets if t.id in latest_by_target]
     if not with_data:
         return None  # no external targets configured, or none checked yet
@@ -155,10 +154,10 @@ def _derive_internet_state(
 
 def _derive_overall(
     *,
-    wifi_connected: Optional[bool],
+    wifi_connected: bool | None,
     has_gateway_target: bool,
-    gateway_reachable: Optional[bool],
-    internet_state: Optional[str],
+    gateway_reachable: bool | None,
+    internet_state: str | None,
 ) -> ConnectivityState:
     # Only an explicit False short-circuits to "WiFi disconnected" - None
     # ("we don't know", e.g. no WiFi reading supplied, or the host is on

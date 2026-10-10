@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import Optional
 
 from app.monitoring._proc import NO_WINDOW, decode_output
 
@@ -30,11 +29,11 @@ async def _run(*args: str, timeout: float = _SUBPROCESS_TIMEOUT) -> str:
         )
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         return decode_output(stdout)
-    except (FileNotFoundError, asyncio.TimeoutError, OSError):
+    except (TimeoutError, FileNotFoundError, OSError):
         return ""
 
 
-async def get_default_gateway_macos() -> Optional[str]:
+async def get_default_gateway_macos() -> str | None:
     """
     macOS-only default-gateway lookup via `route -n get default`'s
     "gateway:" field. Used once, to seed the default "Gateway" target the
@@ -51,7 +50,7 @@ _ROUTE_ROW = re.compile(
 )
 
 
-def parse_default_gateway_windows(output: str) -> Optional[str]:
+def parse_default_gateway_windows(output: str) -> str | None:
     """The gateway of the lowest-metric IPv4 default route in `route print -4`
     output. Rows are `Network Destination, Netmask, Gateway, Interface,
     Metric`; a default route has 0.0.0.0 for both destination and netmask.
@@ -60,5 +59,5 @@ def parse_default_gateway_windows(output: str) -> Optional[str]:
     return min(rows)[1] if rows else None
 
 
-async def get_default_gateway_windows() -> Optional[str]:
+async def get_default_gateway_windows() -> str | None:
     return parse_default_gateway_windows(await _run("route", "print", "-4"))

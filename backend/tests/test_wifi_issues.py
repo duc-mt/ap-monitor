@@ -3,23 +3,21 @@ connection reading that stops an unreadable radio being reported as down."""
 
 from __future__ import annotations
 
-import sys
 import types
 
 import pytest
-
 from app.monitoring.wifi import diagnostics
 from app.monitoring.wifi.models import WifiMetrics, is_connected
 
 
 def _m(**kw):
-    base = dict(
-        timestamp="t",
-        interface="wlan0",
-        interface_state="connected",
-        ssid="Net",
-        bssid="aa:bb",
-    )
+    base = {
+        "timestamp": "t",
+        "interface": "wlan0",
+        "interface_state": "connected",
+        "ssid": "Net",
+        "bssid": "aa:bb",
+    }
     base.update(kw)
     return WifiMetrics(**base)
 

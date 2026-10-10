@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import statistics as pystats
-from datetime import datetime, timedelta, timezone
-from typing import Literal, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 import aiosqlite
 
@@ -20,18 +20,18 @@ _RANGE_DELTAS = {
 
 
 def resolve_range(
-    range_name: RangeName, start: Optional[str], end: Optional[str]
+    range_name: RangeName, start: str | None, end: str | None
 ) -> tuple[datetime, datetime]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if range_name == "custom":
         if not start or not end:
             raise ValueError("start and end are required when range=custom")
         range_start = datetime.fromisoformat(start)
         range_end = datetime.fromisoformat(end)
         if range_start.tzinfo is None:
-            range_start = range_start.replace(tzinfo=timezone.utc)
+            range_start = range_start.replace(tzinfo=UTC)
         if range_end.tzinfo is None:
-            range_end = range_end.replace(tzinfo=timezone.utc)
+            range_end = range_end.replace(tzinfo=UTC)
         if range_start >= range_end:
             raise ValueError("start must be before end")
         return range_start, range_end
@@ -56,9 +56,9 @@ async def compute_statistics(
     conn: aiosqlite.Connection,
     *,
     range_name: RangeName,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
-    target_id: Optional[int] = None,
+    start: str | None = None,
+    end: str | None = None,
+    target_id: int | None = None,
 ) -> StatisticsResponse:
     range_start, range_end = resolve_range(range_name, start, end)
     start_iso, end_iso = range_start.isoformat(), range_end.isoformat()

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import aiosqlite
 
@@ -18,7 +17,7 @@ from app.services.settings_service import get_settings
 async def compute_status(
     conn: aiosqlite.Connection,
     *,
-    monitoring_started_at: Optional[datetime],
+    monitoring_started_at: datetime | None,
     monitoring_running: bool,
 ) -> StatusResponse:
     settings = await get_settings(conn)
@@ -84,7 +83,7 @@ async def compute_status(
 
     uptime = 0.0
     if monitoring_running and monitoring_started_at is not None:
-        uptime = (datetime.now(timezone.utc) - monitoring_started_at).total_seconds()
+        uptime = (datetime.now(UTC) - monitoring_started_at).total_seconds()
 
     # WiFi fields: best-effort, and every one of them stays None together
     # when there's no active WiFi interface at all - a fresh reading is
@@ -95,12 +94,12 @@ async def compute_status(
     rssi_dbm = channel = channel_width_mhz = snr_db = noise_floor_dbm = (
         tx_bitrate_mbps
     ) = None
-    wifi_issue: Optional[WifiIssue] = None
+    wifi_issue: WifiIssue | None = None
     # None = genuinely unknown (an unexpected adapter error, or an adapter
     # that could not tell); False = a real "no active WiFi interface"
     # reading, matching exactly how scheduler._wifi_loop treats the same
     # RuntimeError from get_wifi_metrics.
-    wifi_connected: Optional[bool] = None
+    wifi_connected: bool | None = None
     try:
         active_iface = await wifi.get_active_wifi_interface()
         if active_iface is None:
