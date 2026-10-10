@@ -15,12 +15,6 @@ SUCCESS_OUTPUT = """PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 rtt min/avg/max/mdev = 11.9/12.9/14.5/1.1 ms
 """
 
-PARTIAL_LOSS_OUTPUT = """PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=59 time=20.0 ms
-
---- 8.8.8.8 ping statistics ---
-3 packets transmitted, 1 received, 66.6% packet loss, time 2010ms
-"""
 
 UNREACHABLE_OUTPUT = """PING 10.255.255.1 (10.255.255.1) 56(84) bytes of data.
 From 192.168.1.1 icmp_seq=1 Destination Host Unreachable
