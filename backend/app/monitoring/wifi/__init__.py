@@ -27,7 +27,9 @@ from __future__ import annotations
 
 import sys
 import time
-from datetime import UTC
+from datetime import timezone
+
+UTC = timezone.utc
 from typing import Dict, List, Optional, Tuple
 
 from app.models.wifi_scan import EnvironmentScanResult

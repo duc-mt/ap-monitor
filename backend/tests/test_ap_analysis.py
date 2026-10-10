@@ -14,7 +14,9 @@ Notes:         Requires Python 3.8+
 
 from __future__ import annotations
 
-from datetime import UTC
+from datetime import timezone
+
+UTC = timezone.utc
 from types import SimpleNamespace as N
 
 import pytest

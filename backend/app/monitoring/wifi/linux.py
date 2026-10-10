@@ -17,7 +17,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from datetime import UTC
+from datetime import timezone
+
+UTC = timezone.utc
 
 from app.models.wifi_scan import NeighborNetwork
 from app.monitoring.wifi.base import WifiAdapter

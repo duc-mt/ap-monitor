@@ -17,7 +17,9 @@ from __future__ import annotations
 import math
 from collections import Counter
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc
 from typing import Any
 
 from app.models.wifi_analysis import (

@@ -15,7 +15,9 @@ Notes:         Requires Python 3.8+
 from __future__ import annotations
 
 import itertools
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+UTC = timezone.utc
 
 import aiosqlite
 

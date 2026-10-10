@@ -39,6 +39,14 @@ from __future__ import annotations
 
 DNS_FAILURE_OUTPUT_ERR = "ping: badhostname.invalid: Name or service not known\n"
 
+PARTIAL_LOSS_OUTPUT = """PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=59 time=12.3 ms
+
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 1 received, 66.6667% packet loss, time 2003ms
+rtt min/avg/max/mdev = 12.3/12.3/12.3/0.0 ms
+"""
+
 
 class FakeProcess:
     def __init__(self, stdout: bytes, stderr: bytes = b"", returncode: int = 0):

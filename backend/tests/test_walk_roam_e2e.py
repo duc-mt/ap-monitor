@@ -15,7 +15,9 @@ Notes:         Requires Python 3.8+
 from __future__ import annotations
 
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc
 
 from app.monitoring import wifi
 from app.monitoring.wifi.models import WifiMetrics

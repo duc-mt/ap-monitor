@@ -18,7 +18,9 @@ import asyncio
 import logging
 import re
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc
 
 from app.models.wifi_scan import NeighborNetwork
 from app.monitoring._proc import NO_WINDOW, decode_output

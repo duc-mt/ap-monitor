@@ -12,7 +12,9 @@ Notes:         Requires Python 3.8+
 ==============================================================================
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+UTC = timezone.utc
 
 import aiosqlite
 

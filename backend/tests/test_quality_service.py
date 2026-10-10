@@ -41,7 +41,9 @@ def test_classify_respects_custom_thresholds():
 # compute_wireless_quality_score (Stage 12) - against the real db fixture,
 # exercising the actual repo layer rather than mocking it.
 # --------------------------------------------------------------------------
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+UTC = timezone.utc
 
 import pytest
 from app.database import (
