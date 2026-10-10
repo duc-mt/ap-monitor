@@ -33,6 +33,7 @@ changed. How disruptive it was - gateway/internet interruption, packet
 loss, peak latency, a success/classification/confidence verdict - is
 Stage 10's job; those columns are left NULL on the row this file writes.
 """
+
 from __future__ import annotations
 
 import logging
@@ -74,7 +75,11 @@ async def evaluate(conn: aiosqlite.Connection, reading: WifiMetrics) -> RoamingS
     st = _states.setdefault(reading.interface, _InterfaceRoamState())
 
     if reading.interface_state != "connected":
-        st.state = "connecting" if reading.interface_state in _CONNECTING_STATES else "disconnected"
+        st.state = (
+            "connecting"
+            if reading.interface_state in _CONNECTING_STATES
+            else "disconnected"
+        )
         st.candidate_reading = None
         return st.state
 
@@ -126,35 +131,44 @@ async def evaluate(conn: aiosqlite.Connection, reading: WifiMetrics) -> RoamingS
     return st.state
 
 
-async def _record_roam(conn: aiosqlite.Connection, *, previous: WifiMetrics, new: WifiMetrics) -> None:
+async def _record_roam(
+    conn: aiosqlite.Connection, *, previous: WifiMetrics, new: WifiMetrics
+) -> None:
     ip_changed = (previous.ipv4_addresses or []) != (new.ipv4_addresses or [])
-    event = await roam_events_repo.create_roam_event(conn, RoamEventCreate(
-        timestamp=new.timestamp,
-        interface=new.interface,
-        ssid=new.ssid,
-        previous_bssid=previous.bssid,
-        new_bssid=new.bssid,
-        previous_frequency_mhz=previous.frequency_mhz,
-        new_frequency_mhz=new.frequency_mhz,
-        previous_channel=previous.channel,
-        new_channel=new.channel,
-        previous_band=previous.band,
-        new_band=new.band,
-        previous_phy_mode=previous.phy_mode,
-        new_phy_mode=new.phy_mode,
-        previous_channel_width_mhz=previous.channel_width_mhz,
-        new_channel_width_mhz=new.channel_width_mhz,
-        previous_mcs_index=previous.mcs_index,
-        new_mcs_index=new.mcs_index,
-        previous_rssi_dbm=previous.rssi_dbm,
-        new_rssi_dbm=new.rssi_dbm,
-        ip_changed=ip_changed,
-        previous_ipv4=previous.ipv4_addresses,
-        new_ipv4=new.ipv4_addresses,
-    ))
+    event = await roam_events_repo.create_roam_event(
+        conn,
+        RoamEventCreate(
+            timestamp=new.timestamp,
+            interface=new.interface,
+            ssid=new.ssid,
+            previous_bssid=previous.bssid,
+            new_bssid=new.bssid,
+            previous_frequency_mhz=previous.frequency_mhz,
+            new_frequency_mhz=new.frequency_mhz,
+            previous_channel=previous.channel,
+            new_channel=new.channel,
+            previous_band=previous.band,
+            new_band=new.band,
+            previous_phy_mode=previous.phy_mode,
+            new_phy_mode=new.phy_mode,
+            previous_channel_width_mhz=previous.channel_width_mhz,
+            new_channel_width_mhz=new.channel_width_mhz,
+            previous_mcs_index=previous.mcs_index,
+            new_mcs_index=new.mcs_index,
+            previous_rssi_dbm=previous.rssi_dbm,
+            new_rssi_dbm=new.rssi_dbm,
+            ip_changed=ip_changed,
+            previous_ipv4=previous.ipv4_addresses,
+            new_ipv4=new.ipv4_addresses,
+        ),
+    )
     logger.info(
         "Roam confirmed on %s: %s -> %s (SSID %r, event id=%s)",
-        new.interface, previous.bssid, new.bssid, new.ssid, event.id,
+        new.interface,
+        previous.bssid,
+        new.bssid,
+        new.ssid,
+        event.id,
     )
     # Stage 10: measure how disruptive this roam actually was. Fire-and-
     # forget - start_watch spawns its own task and returns immediately, so

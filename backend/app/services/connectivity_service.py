@@ -30,6 +30,7 @@ failed for long enough to count as a recorded outage" and owned an
 state model (this file) replaces the online/offline boolean pair with the
 richer named-state model below, rather than an outage span table.
 """
+
 from __future__ import annotations
 
 import logging
@@ -78,7 +79,9 @@ async def compute_status(
         m = latest_by_target.get(gateway_target.id)
         gateway_reachable = m.success if m is not None else None
 
-    internet_state = _derive_internet_state(external_targets, latest_by_target, settings.internet_quorum)
+    internet_state = _derive_internet_state(
+        external_targets, latest_by_target, settings.internet_quorum
+    )
 
     overall = _derive_overall(
         wifi_connected=wifi_connected,
@@ -127,7 +130,9 @@ async def evaluate(
     return status
 
 
-def _derive_internet_state(external_targets, latest_by_target, quorum: str) -> Optional[str]:
+def _derive_internet_state(
+    external_targets, latest_by_target, quorum: str
+) -> Optional[str]:
     with_data = [t for t in external_targets if t.id in latest_by_target]
     if not with_data:
         return None  # no external targets configured, or none checked yet
@@ -194,20 +199,26 @@ async def _maybe_notify(overall: ConnectivityState, settings: AppSettings) -> No
     if is_broken and not was_broken:
         if settings.notifications.on_offline:
             await notification_service.send(
-                "Connectivity lost", _describe(overall),
-                urgency="critical", key="connectivity_state",
+                "Connectivity lost",
+                _describe(overall),
+                urgency="critical",
+                key="connectivity_state",
             )
     elif overall == "internet_available" and _previous_state != "internet_available":
         if settings.notifications.on_online:
             await notification_service.send(
-                "Connectivity restored", "Internet access is fully available again.",
-                urgency="normal", key="connectivity_state",
+                "Connectivity restored",
+                "Internet access is fully available again.",
+                urgency="normal",
+                key="connectivity_state",
             )
     elif overall == "degraded" and _previous_state == "internet_available":
         if settings.notifications.on_degraded:
             await notification_service.send(
-                "Connectivity degraded", "Some monitored targets have stopped responding.",
-                urgency="normal", key="connectivity_state",
+                "Connectivity degraded",
+                "Some monitored targets have stopped responding.",
+                urgency="normal",
+                key="connectivity_state",
             )
 
 

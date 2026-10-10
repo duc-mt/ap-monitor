@@ -9,16 +9,28 @@ from app.database.connection import write_transaction
 from app.models.roam_event import RoamEventCreate, RoamEventOut
 
 _INSERT_COLUMNS = (
-    "timestamp", "interface", "ssid",
-    "previous_bssid", "new_bssid",
-    "previous_frequency_mhz", "new_frequency_mhz",
-    "previous_channel", "new_channel",
-    "previous_band", "new_band",
-    "previous_phy_mode", "new_phy_mode",
-    "previous_channel_width_mhz", "new_channel_width_mhz",
-    "previous_mcs_index", "new_mcs_index",
-    "previous_rssi_dbm", "new_rssi_dbm",
-    "ip_changed", "previous_ipv4", "new_ipv4",
+    "timestamp",
+    "interface",
+    "ssid",
+    "previous_bssid",
+    "new_bssid",
+    "previous_frequency_mhz",
+    "new_frequency_mhz",
+    "previous_channel",
+    "new_channel",
+    "previous_band",
+    "new_band",
+    "previous_phy_mode",
+    "new_phy_mode",
+    "previous_channel_width_mhz",
+    "new_channel_width_mhz",
+    "previous_mcs_index",
+    "new_mcs_index",
+    "previous_rssi_dbm",
+    "new_rssi_dbm",
+    "ip_changed",
+    "previous_ipv4",
+    "new_ipv4",
 )
 
 
@@ -60,17 +72,29 @@ def _row_to_event(row: aiosqlite.Row) -> RoamEventOut:
     )
 
 
-async def create_roam_event(conn: aiosqlite.Connection, data: RoamEventCreate) -> RoamEventOut:
+async def create_roam_event(
+    conn: aiosqlite.Connection, data: RoamEventCreate
+) -> RoamEventOut:
     values = (
-        data.timestamp, data.interface, data.ssid,
-        data.previous_bssid, data.new_bssid,
-        data.previous_frequency_mhz, data.new_frequency_mhz,
-        data.previous_channel, data.new_channel,
-        data.previous_band, data.new_band,
-        data.previous_phy_mode, data.new_phy_mode,
-        data.previous_channel_width_mhz, data.new_channel_width_mhz,
-        data.previous_mcs_index, data.new_mcs_index,
-        data.previous_rssi_dbm, data.new_rssi_dbm,
+        data.timestamp,
+        data.interface,
+        data.ssid,
+        data.previous_bssid,
+        data.new_bssid,
+        data.previous_frequency_mhz,
+        data.new_frequency_mhz,
+        data.previous_channel,
+        data.new_channel,
+        data.previous_band,
+        data.new_band,
+        data.previous_phy_mode,
+        data.new_phy_mode,
+        data.previous_channel_width_mhz,
+        data.new_channel_width_mhz,
+        data.previous_mcs_index,
+        data.new_mcs_index,
+        data.previous_rssi_dbm,
+        data.new_rssi_dbm,
         int(data.ip_changed),
         json.dumps(data.previous_ipv4) if data.previous_ipv4 is not None else None,
         json.dumps(data.new_ipv4) if data.new_ipv4 is not None else None,
@@ -82,13 +106,19 @@ async def create_roam_event(conn: aiosqlite.Connection, data: RoamEventCreate) -
             values,
         )
         row_id = cursor.lastrowid
-        async with tx.execute("SELECT * FROM roam_events WHERE id = ?", (row_id,)) as read_cursor:
+        async with tx.execute(
+            "SELECT * FROM roam_events WHERE id = ?", (row_id,)
+        ) as read_cursor:
             row = await read_cursor.fetchone()
     return _row_to_event(row)
 
 
-async def get_roam_event(conn: aiosqlite.Connection, event_id: int) -> Optional[RoamEventOut]:
-    async with conn.execute("SELECT * FROM roam_events WHERE id = ?", (event_id,)) as cursor:
+async def get_roam_event(
+    conn: aiosqlite.Connection, event_id: int
+) -> Optional[RoamEventOut]:
+    async with conn.execute(
+        "SELECT * FROM roam_events WHERE id = ?", (event_id,)
+    ) as cursor:
         row = await cursor.fetchone()
     return _row_to_event(row) if row else None
 
@@ -119,9 +149,13 @@ async def update_interruption_result(
             WHERE id = ?
             """,
             (
-                gateway_interruption_ms, internet_interruption_ms,
-                packet_loss_during_pct, peak_latency_ms,
-                (int(success) if success is not None else None), classification, confidence,
+                gateway_interruption_ms,
+                internet_interruption_ms,
+                packet_loss_during_pct,
+                peak_latency_ms,
+                (int(success) if success is not None else None),
+                classification,
+                confidence,
                 event_id,
             ),
         )

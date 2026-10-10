@@ -14,6 +14,7 @@ itself, which should still be caught inside the adapter and turned into
 "metrics we could get, with the rest left None" rather than propagating
 and killing the monitoring loop for the whole app.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

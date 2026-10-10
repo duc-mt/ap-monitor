@@ -15,7 +15,12 @@ from app.models.target import TargetOut
 from app.monitoring import wifi
 from app.monitoring.wifi.models import is_connected
 from app.monitoring.pinger import PingBatchResult, run_check
-from app.services import connectivity_service, notification_service, roam_interruption_service, roaming_service
+from app.services import (
+    connectivity_service,
+    notification_service,
+    roam_interruption_service,
+    roaming_service,
+)
 from app.services.settings_service import get_settings
 
 logger = logging.getLogger("ap_monitor.scheduler")
@@ -77,8 +82,12 @@ class MonitoringManager:
             targets = await targets_repo.list_targets(conn, enabled_only=True)
             for target in targets:
                 self._spawn(conn, target)
-            self._cleanup_task = asyncio.create_task(self._cleanup_loop(conn), name="retention-cleanup")
-            self._wifi_task = asyncio.create_task(self._wifi_loop(conn), name="wifi-poll")
+            self._cleanup_task = asyncio.create_task(
+                self._cleanup_loop(conn), name="retention-cleanup"
+            )
+            self._wifi_task = asyncio.create_task(
+                self._wifi_loop(conn), name="wifi-poll"
+            )
             logger.info("Monitoring started with %d target(s)", len(targets))
 
     async def stop(self) -> None:
@@ -113,34 +122,52 @@ class MonitoringManager:
             self._spawn(conn, target)
 
     def _spawn(self, conn: aiosqlite.Connection, target: TargetOut) -> None:
-        task = asyncio.create_task(self._monitor_loop(conn, target), name=f"monitor-{target.id}")
+        task = asyncio.create_task(
+            self._monitor_loop(conn, target), name=f"monitor-{target.id}"
+        )
         self._tasks[target.id] = task
 
-    async def _monitor_loop(self, conn: aiosqlite.Connection, target: TargetOut) -> None:
+    async def _monitor_loop(
+        self, conn: aiosqlite.Connection, target: TargetOut
+    ) -> None:
         current = target
         while True:
             try:
                 settings = await get_settings(conn)
                 result = await run_check(
-                    host=current.host, protocol=current.protocol, port=current.port,
-                    count=settings.pings_per_check, timeout=settings.ping_timeout_seconds,
+                    host=current.host,
+                    protocol=current.protocol,
+                    port=current.port,
+                    count=settings.pings_per_check,
+                    timeout=settings.ping_timeout_seconds,
                 )
-                await measurements_repo.insert_measurement(conn, MeasurementCreate(
-                    target_id=current.id,
-                    timestamp=datetime.now(timezone.utc).isoformat(),
-                    latency_ms=result.avg_latency_ms,
-                    packet_loss=result.loss_pct,
-                    jitter_ms=result.jitter_ms,
-                    success=result.success,
-                    error=result.error,
-                ))
+                await measurements_repo.insert_measurement(
+                    conn,
+                    MeasurementCreate(
+                        target_id=current.id,
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        latency_ms=result.avg_latency_ms,
+                        packet_loss=result.loss_pct,
+                        jitter_ms=result.jitter_ms,
+                        success=result.success,
+                        error=result.error,
+                    ),
+                )
                 await self._check_thresholds(current, result, settings)
                 async with self._eval_lock:
-                    await connectivity_service.evaluate(conn, settings, wifi_connected=self._wifi_connected)
+                    await connectivity_service.evaluate(
+                        conn, settings, wifi_connected=self._wifi_connected
+                    )
             except asyncio.CancelledError:
                 raise
-            except Exception:  # pragma: no cover - defensive: one bad check must not kill the loop
-                logger.exception("Unexpected error monitoring target %s (%s)", current.name, current.host)
+            except (
+                Exception
+            ):  # pragma: no cover - defensive: one bad check must not kill the loop
+                logger.exception(
+                    "Unexpected error monitoring target %s (%s)",
+                    current.name,
+                    current.host,
+                )
 
             fresh = await targets_repo.get_target(conn, current.id)
             if fresh is None or not fresh.enabled:
@@ -161,13 +188,18 @@ class MonitoringManager:
             await notification_service.send(
                 f"High latency: {target.name}",
                 f"{result.avg_latency_ms:.0f} ms (threshold {settings.latency_warning_threshold_ms:.0f} ms)",
-                key=f"latency:{target.id}", cooldown_seconds=cooldown,
+                key=f"latency:{target.id}",
+                cooldown_seconds=cooldown,
             )
-        if result.loss_pct > settings.packet_loss_warning_threshold_pct and settings.notifications.on_packet_loss_threshold:
+        if (
+            result.loss_pct > settings.packet_loss_warning_threshold_pct
+            and settings.notifications.on_packet_loss_threshold
+        ):
             await notification_service.send(
                 f"Packet loss: {target.name}",
                 f"{result.loss_pct:.0f}% loss (threshold {settings.packet_loss_warning_threshold_pct:.0f}%)",
-                key=f"loss:{target.id}", cooldown_seconds=cooldown,
+                key=f"loss:{target.id}",
+                cooldown_seconds=cooldown,
             )
 
     async def _cleanup_loop(self, conn: aiosqlite.Connection) -> None:
@@ -175,12 +207,20 @@ class MonitoringManager:
             await asyncio.sleep(_INITIAL_CLEANUP_DELAY)
             while True:
                 settings = await get_settings(conn)
-                deleted = await measurements_repo.delete_older_than(conn, settings.data_retention_days)
+                deleted = await measurements_repo.delete_older_than(
+                    conn, settings.data_retention_days
+                )
                 if deleted:
-                    logger.info("Retention cleanup removed %d measurement row(s)", deleted)
-                wifi_deleted = await wifi_samples_repo.delete_older_than(conn, settings.data_retention_days)
+                    logger.info(
+                        "Retention cleanup removed %d measurement row(s)", deleted
+                    )
+                wifi_deleted = await wifi_samples_repo.delete_older_than(
+                    conn, settings.data_retention_days
+                )
                 if wifi_deleted:
-                    logger.info("Retention cleanup removed %d wifi sample row(s)", wifi_deleted)
+                    logger.info(
+                        "Retention cleanup removed %d wifi sample row(s)", wifi_deleted
+                    )
                 await asyncio.sleep(_CLEANUP_INTERVAL)
         except asyncio.CancelledError:
             raise
@@ -200,14 +240,18 @@ class MonitoringManager:
                     # WiFi, so "no WiFi association" correctly means
                     # disconnected even on a host that also has ethernet.
                     self._wifi_connected = False
-                except Exception:  # pragma: no cover - defensive: one bad poll must not kill the loop
+                except (
+                    Exception
+                ):  # pragma: no cover - defensive: one bad poll must not kill the loop
                     logger.exception("Unexpected error polling WiFi metrics")
                     self._wifi_connected = None  # genuinely unknown, not "disconnected"
                 else:
                     self._wifi_connected = is_connected(metrics)
                     await wifi_samples_repo.insert_sample(conn, metrics)
                     await roaming_service.evaluate(conn, metrics)
-                await asyncio.sleep(max(MIN_INTERVAL_SECONDS, settings.wifi_poll_interval_seconds))
+                await asyncio.sleep(
+                    max(MIN_INTERVAL_SECONDS, settings.wifi_poll_interval_seconds)
+                )
         except asyncio.CancelledError:
             raise
 

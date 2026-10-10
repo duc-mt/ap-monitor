@@ -33,6 +33,7 @@ Things a reader should know before trusting the numbers:
 No call here triggers a scan: `show interfaces`/`show networks` read what
 the WLAN service already has. Each command is a plain argv list (no shell).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -161,7 +162,11 @@ def _parse_block(block: List[Tuple[str, str]]) -> Optional[Dict[str, object]]:
     info["signal"] = int(pm.group(1)) if pm else None
     for label, field in (("receive rate (mbps)", "rx"), ("transmit rate (mbps)", "tx")):
         raw = by_key.get(label)
-        info[field] = float(raw.replace(",", ".")) if raw and _FLOAT_RE.match(raw.strip()) else None
+        info[field] = (
+            float(raw.replace(",", "."))
+            if raw and _FLOAT_RE.match(raw.strip())
+            else None
+        )
 
     recognised = state_raw is not None
     state = _STATE_MAP.get((state_raw or "").strip().lower())
@@ -172,14 +177,18 @@ def _parse_block(block: List[Tuple[str, str]]) -> Optional[Dict[str, object]]:
     # SSID is the line immediately before the AP BSSID.
     if not recognised:
         macs = [(i, v) for i, (_, v) in enumerate(block) if _MAC_RE.match(v.strip())]
-        if len(macs) >= 2:           # [adapter MAC, AP BSSID]
+        if len(macs) >= 2:  # [adapter MAC, AP BSSID]
             idx, info["bssid"] = macs[1]
             if idx > 0:
                 info["ssid"] = block[idx - 1][1]
-            for _, v in block[idx + 1:]:
+            for _, v in block[idx + 1 :]:
                 if info["band"] is None and _norm_band(v):
                     info["band"] = _norm_band(v)
-                elif info["band"] is not None and info["channel"] is None and _INT_RE.match(v.strip()):
+                elif (
+                    info["band"] is not None
+                    and info["channel"] is None
+                    and _INT_RE.match(v.strip())
+                ):
                     info["channel"] = int(v.strip())
         for _, v in block:
             pm = _PCT_RE.match(v.strip())
@@ -260,9 +269,13 @@ def parse_networks(text: str) -> List[NeighborNetwork]:
             continue
         if not v:
             continue
-        if re.match(r"^bssid\s+\d+$", k) or (cur is None and _MAC_RE.match(v) and not k.startswith("physical")):
+        if re.match(r"^bssid\s+\d+$", k) or (
+            cur is None and _MAC_RE.match(v) and not k.startswith("physical")
+        ):
             flush()
-            cur = NeighborNetwork(ssid=ssid, bssid=v.lower().replace("-", ":"), security=security)
+            cur = NeighborNetwork(
+                ssid=ssid, bssid=v.lower().replace("-", ":"), security=security
+            )
             prev_was_band = False
             continue
         if cur is None:
@@ -287,7 +300,9 @@ def parse_networks(text: str) -> List[NeighborNetwork]:
     return out
 
 
-def parse_ipconfig(text: str, interface: str) -> Tuple[Optional[List[str]], Optional[str]]:
+def parse_ipconfig(
+    text: str, interface: str
+) -> Tuple[Optional[List[str]], Optional[str]]:
     """(IPv4 addresses, default gateway) for `interface` from plain
     `ipconfig` output. Sections are found by the adapter name in the
     (unindented) header line, which is not localized; within a section the
@@ -322,7 +337,10 @@ def parse_ipconfig(text: str, interface: str) -> Tuple[Optional[List[str]], Opti
 async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[str]:
     try:
         proc = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, **NO_WINDOW,
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            **NO_WINDOW,
         )
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         return decode_output(stdout)
@@ -354,7 +372,11 @@ class WindowsWifiAdapter(WifiAdapter):
     async def list_interfaces(self) -> List[WifiInterfaceInfo]:
         infos = await self._read_interfaces() or []
         return [
-            WifiInterfaceInfo(name=str(i["name"]), state=str(i["state"]), is_active=i["state"] == "connected")
+            WifiInterfaceInfo(
+                name=str(i["name"]),
+                state=str(i["state"]),
+                is_active=i["state"] == "connected",
+            )
             for i in infos
         ]
 
@@ -369,14 +391,19 @@ class WindowsWifiAdapter(WifiAdapter):
         infos = await self._read_interfaces()
         if infos is None:
             metrics = WifiMetrics(
-                timestamp=datetime.now(timezone.utc).isoformat(), interface=interface,
-                interface_state="unknown", issue=self.last_issue,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                interface=interface,
+                interface_state="unknown",
+                issue=self.last_issue,
             )
             return metrics
-        match = next((i for i in infos if str(i["name"]).lower() == interface.lower()), None)
+        match = next(
+            (i for i in infos if str(i["name"]).lower() == interface.lower()), None
+        )
         if match is None:
             return WifiMetrics(
-                timestamp=datetime.now(timezone.utc).isoformat(), interface=interface,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                interface=interface,
                 interface_state="unavailable",
             )
         metrics = metrics_from_interface(match, interface)
@@ -386,7 +413,10 @@ class WindowsWifiAdapter(WifiAdapter):
 
     async def _apply_ip_info(self, metrics: WifiMetrics, interface: str) -> None:
         cached = self._ip_cache.get(interface)
-        if cached is not None and (time.monotonic() - cached[0]) < _IP_CACHE_TTL_SECONDS:
+        if (
+            cached is not None
+            and (time.monotonic() - cached[0]) < _IP_CACHE_TTL_SECONDS
+        ):
             metrics.ipv4_addresses, metrics.gateway = cached[1], cached[2]
             return
         out = await _run(["ipconfig"])
@@ -395,7 +425,10 @@ class WindowsWifiAdapter(WifiAdapter):
         metrics.ipv4_addresses, metrics.gateway = addrs, gateway
 
     async def scan_neighbors(self, interface: str) -> List[NeighborNetwork]:
-        out = await _run(["netsh", "wlan", "show", "networks", "mode=bssid"], timeout=_SCAN_TIMEOUT_SECONDS)
+        out = await _run(
+            ["netsh", "wlan", "show", "networks", "mode=bssid"],
+            timeout=_SCAN_TIMEOUT_SECONDS,
+        )
         if not out or _is_location_blocked(out):
             return []
         return parse_networks(out)

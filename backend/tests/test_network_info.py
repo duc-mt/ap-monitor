@@ -26,4 +26,9 @@ def test_windows_gateway_is_the_lowest_metric_default_route():
 
 
 def test_windows_gateway_is_none_without_a_default_route():
-    assert parse_default_gateway_windows("IPv4 Route Table\n  127.0.0.0  255.0.0.0  On-link  127.0.0.1  331\n") is None
+    assert (
+        parse_default_gateway_windows(
+            "IPv4 Route Table\n  127.0.0.0  255.0.0.0  On-link  127.0.0.1  331\n"
+        )
+        is None
+    )

@@ -14,11 +14,11 @@ Quality = Literal["excellent", "good", "fair", "poor", "offline", "unknown"]
 ConnectivityState = Literal[
     "unknown",
     "wifi_disconnected",
-    "wifi_connected",           # associated, but no probe targets configured/answered yet
+    "wifi_connected",  # associated, but no probe targets configured/answered yet
     "gateway_unavailable",
-    "gateway_available",        # gateway reachable, but no external targets configured/answered yet
+    "gateway_available",  # gateway reachable, but no external targets configured/answered yet
     "internet_unavailable",
-    "degraded",                 # some, but not all, external targets reachable
+    "degraded",  # some, but not all, external targets reachable
     "internet_available",
 ]
 
@@ -34,6 +34,7 @@ class WifiIssue(BaseModel):
     """Why the WiFi/AP half of the dashboard is empty or incomplete, in words
     a user can act on. Absent (None) when everything the adapter can read was
     read - see app/monitoring/wifi/diagnostics.py."""
+
     code: str
     title: str
     detail: str

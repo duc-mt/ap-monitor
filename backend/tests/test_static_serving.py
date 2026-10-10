@@ -12,7 +12,9 @@ def test_serves_files_inside_the_dist_directory(tmp_path):
 
 def test_unknown_paths_and_the_root_are_not_files(tmp_path):
     assert safe_static_file(tmp_path, "") is None
-    assert safe_static_file(tmp_path, "walk-test/3") is None     # a client-side route, handled by the SPA fallback
+    assert (
+        safe_static_file(tmp_path, "walk-test/3") is None
+    )  # a client-side route, handled by the SPA fallback
 
 
 def test_parent_directory_traversal_is_refused(tmp_path):

@@ -28,6 +28,7 @@ networks" rule exists to prevent. So it is always invoked with an explicit
 (An earlier revision of this docstring claimed omitting the flag was
 equivalent to "no rescan" - it isn't, which is why this is spelled out.)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -37,7 +38,12 @@ from typing import List, Optional
 
 from app.monitoring.wifi.base import WifiAdapter
 from app.models.wifi_scan import NeighborNetwork
-from app.monitoring.wifi.models import WifiInterfaceInfo, WifiMetrics, band_from_frequency, channel_from_frequency
+from app.monitoring.wifi.models import (
+    WifiInterfaceInfo,
+    WifiMetrics,
+    band_from_frequency,
+    channel_from_frequency,
+)
 
 logger = logging.getLogger("ap_monitor.wifi.linux")
 
@@ -69,7 +75,9 @@ async def _run(cmd: List[str], timeout: float = _TIMEOUT_SECONDS) -> Optional[st
     """
     try:
         proc = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
         )
     except (FileNotFoundError, OSError):
         return None
@@ -134,14 +142,35 @@ class LinuxWifiAdapter(WifiAdapter):
         # The three data sources are independent - run them concurrently so
         # a slow/missing one doesn't serialize onto the total tick latency.
         show_out, ap_out, link_out, survey_out = await asyncio.gather(
-            _run(["nmcli", "-t", "-f",
-                  "GENERAL.STATE,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS",
-                  "device", "show", interface]),
+            _run(
+                [
+                    "nmcli",
+                    "-t",
+                    "-f",
+                    "GENERAL.STATE,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS",
+                    "device",
+                    "show",
+                    interface,
+                ]
+            ),
             # --rescan no is load-bearing, not cosmetic: nmcli's default
             # (auto) requests a fresh scan when the last is >30s old - see
             # the module docstring.
-            _run(["nmcli", "-t", "-f", "active,ssid,bssid,chan,freq,signal",
-                  "dev", "wifi", "list", "ifname", interface, "--rescan", "no"]),
+            _run(
+                [
+                    "nmcli",
+                    "-t",
+                    "-f",
+                    "active,ssid,bssid,chan,freq,signal",
+                    "dev",
+                    "wifi",
+                    "list",
+                    "ifname",
+                    interface,
+                    "--rescan",
+                    "no",
+                ]
+            ),
             _run(["iw", "dev", interface, "link"]),
             _run(["iw", "dev", interface, "survey", "dump"]),
         )
@@ -233,7 +262,10 @@ def _apply_iw_link(metrics: WifiMetrics, out: Optional[str]) -> None:
     if m:
         metrics.rssi_dbm = int(m.group(1))
 
-    for label, attr in (("tx bitrate", "tx_bitrate_mbps"), ("rx bitrate", "rx_bitrate_mbps")):
+    for label, attr in (
+        ("tx bitrate", "tx_bitrate_mbps"),
+        ("rx bitrate", "rx_bitrate_mbps"),
+    ):
         line_match = re.search(rf"{label}:\s*([\d.]+)\s*MBit/s(.*)", out)
         if not line_match:
             continue
@@ -253,7 +285,9 @@ def _apply_iw_link(metrics: WifiMetrics, out: Optional[str]) -> None:
             metrics.channel_width_mhz = int(width_match.group(1))
 
 
-def _apply_iw_survey(metrics: WifiMetrics, out: Optional[str], frequency_mhz: Optional[int]) -> None:
+def _apply_iw_survey(
+    metrics: WifiMetrics, out: Optional[str], frequency_mhz: Optional[int]
+) -> None:
     """Noise floor, when the driver reports it at all - most consumer WiFi
     chipsets don't expose this via `iw survey dump`, so a None result here
     (and therefore no SNR) is the common case, not a bug."""
@@ -279,7 +313,7 @@ def _parse_iw_scan(out: str) -> List[NeighborNetwork]:
     when a particular block isn't present, exactly like every other reading
     in this app.
     """
-    text = out[len("BSS "):] if out.startswith("BSS ") else out
+    text = out[len("BSS ") :] if out.startswith("BSS ") else out
     neighbors: List[NeighborNetwork] = []
     for block in re.split(r"\nBSS ", text):
         n = _parse_bss_block(block)
@@ -301,7 +335,9 @@ def _parse_bss_block(block: str) -> Optional[NeighborNetwork]:
     freq = int(freq_match.group(1)) if freq_match else None
 
     channel_match = re.search(r"DS Parameter set:\s*channel\s*(\d+)", block)
-    channel = int(channel_match.group(1)) if channel_match else channel_from_frequency(freq)
+    channel = (
+        int(channel_match.group(1)) if channel_match else channel_from_frequency(freq)
+    )
 
     signal_match = re.search(r"\n\tsignal:\s*(-?[\d.]+)\s*dBm", block)
     rssi = int(round(float(signal_match.group(1)))) if signal_match else None
@@ -310,11 +346,17 @@ def _parse_bss_block(block: str) -> Optional[NeighborNetwork]:
     # a network only ever advertises the highest standard it supports, but
     # scan output typically includes every block up to that level, so
     # checking newest-first picks the right one.
-    if re.search(r"\n\tHE capabilities", block) or re.search(r"\n\tHE operation", block):
+    if re.search(r"\n\tHE capabilities", block) or re.search(
+        r"\n\tHE operation", block
+    ):
         phy_mode = "802.11ax"
-    elif re.search(r"\n\tVHT capabilities", block) or re.search(r"\n\tVHT operation", block):
+    elif re.search(r"\n\tVHT capabilities", block) or re.search(
+        r"\n\tVHT operation", block
+    ):
         phy_mode = "802.11ac"
-    elif re.search(r"\n\tHT capabilities", block) or re.search(r"\n\tHT operation", block):
+    elif re.search(r"\n\tHT capabilities", block) or re.search(
+        r"\n\tHT operation", block
+    ):
         phy_mode = "802.11n"
     elif freq is not None and 2400 <= freq <= 2495:
         phy_mode = "802.11g"
@@ -339,7 +381,12 @@ def _parse_bss_block(block: str) -> Optional[NeighborNetwork]:
         security = "Open"
 
     return NeighborNetwork(
-        ssid=ssid, bssid=bssid, phy_mode=phy_mode, channel=channel,
-        channel_width_mhz=channel_width_mhz, band=band_from_frequency(freq),
-        security=security, rssi_dbm=rssi,
+        ssid=ssid,
+        bssid=bssid,
+        phy_mode=phy_mode,
+        channel=channel,
+        channel_width_mhz=channel_width_mhz,
+        band=band_from_frequency(freq),
+        security=security,
+        rssi_dbm=rssi,
     )

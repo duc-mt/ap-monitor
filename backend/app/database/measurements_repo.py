@@ -23,7 +23,9 @@ def _row_to_measurement(row: aiosqlite.Row) -> MeasurementOut:
     )
 
 
-async def insert_measurement(conn: aiosqlite.Connection, data: MeasurementCreate) -> int:
+async def insert_measurement(
+    conn: aiosqlite.Connection, data: MeasurementCreate
+) -> int:
     async with write_transaction() as tx:
         cursor = await tx.execute(
             """
@@ -31,8 +33,13 @@ async def insert_measurement(conn: aiosqlite.Connection, data: MeasurementCreate
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                data.target_id, data.timestamp, data.latency_ms,
-                data.packet_loss, data.jitter_ms, int(data.success), data.error,
+                data.target_id,
+                data.timestamp,
+                data.latency_ms,
+                data.packet_loss,
+                data.jitter_ms,
+                int(data.success),
+                data.error,
             ),
         )
     return cursor.lastrowid
@@ -67,7 +74,9 @@ async def list_measurements(
     return [_row_to_measurement(r) for r in rows]
 
 
-async def latest_measurement(conn: aiosqlite.Connection, target_id: int) -> Optional[MeasurementOut]:
+async def latest_measurement(
+    conn: aiosqlite.Connection, target_id: int
+) -> Optional[MeasurementOut]:
     async with conn.execute(
         "SELECT m.*, t.name FROM measurements m JOIN targets t ON t.id = m.target_id "
         "WHERE m.target_id = ? ORDER BY m.timestamp DESC LIMIT 1",
@@ -151,5 +160,7 @@ async def earliest_timestamp(conn: aiosqlite.Connection) -> Optional[str]:
 async def delete_older_than(conn: aiosqlite.Connection, retention_days: int) -> int:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
     async with write_transaction() as tx:
-        cursor = await tx.execute("DELETE FROM measurements WHERE timestamp < ?", (cutoff,))
+        cursor = await tx.execute(
+            "DELETE FROM measurements WHERE timestamp < ?", (cutoff,)
+        )
     return cursor.rowcount

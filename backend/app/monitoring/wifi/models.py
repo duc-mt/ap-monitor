@@ -10,6 +10,7 @@ or an empty string, since both are meaningfully different from
 readings; a genuinely empty DNS server list is different from "we
 couldn't determine the DNS servers").
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,12 +21,13 @@ from typing import List, Optional
 # platform-specific state names (NetworkManager's numeric+string states,
 # CoreWLAN's CWInterfaceState enum, etc.) up to the rest of the app.
 InterfaceState = str  # one of: connected, disconnected, connecting,
-                       # scanning, disabled, unavailable, unknown
+# scanning, disabled, unavailable, unknown
 
 
 @dataclass
 class WifiInterfaceInfo:
     """A WiFi-capable network interface, before any metrics are read from it."""
+
     name: str
     state: InterfaceState
     is_active: bool  # True if this interface is the one currently carrying traffic
@@ -34,6 +36,7 @@ class WifiInterfaceInfo:
 @dataclass
 class WifiMetrics:
     """A single point-in-time snapshot for one interface."""
+
     timestamp: str  # ISO 8601, UTC
     interface: str
     interface_state: InterfaceState
@@ -141,6 +144,7 @@ class NeighborNetwork:
     """One network seen during an on-demand environment scan (Stage 11).
     Never populated from the background monitoring loop - only from an
     explicit, user-triggered scan_environment() call."""
+
     ssid: Optional[str] = None
     bssid: Optional[str] = None
     channel: Optional[int] = None

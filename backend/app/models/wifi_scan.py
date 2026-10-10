@@ -3,6 +3,7 @@ Models for the on-demand "Scan Environment" feature. Never populated by
 the background monitoring loop - only by an explicit, user-triggered scan
 (see app.monitoring.wifi.scan_environment).
 """
+
 from __future__ import annotations
 
 from typing import List, Optional

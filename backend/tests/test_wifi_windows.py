@@ -9,13 +9,19 @@ output. They confirm our code handles that layout, not that every Windows
 build prints exactly this - see the note at the top of
 app/monitoring/wifi/windows.py.
 """
+
 from __future__ import annotations
 
 import pytest
 
 from app.monitoring.wifi import windows
 from app.monitoring.wifi.windows import (
-    WindowsWifiAdapter, metrics_from_interface, parse_interfaces, parse_ipconfig, parse_networks, rssi_from_quality,
+    WindowsWifiAdapter,
+    metrics_from_interface,
+    parse_interfaces,
+    parse_ipconfig,
+    parse_networks,
+    rssi_from_quality,
 )
 
 CONNECTED = """
@@ -55,7 +61,9 @@ There is 1 interface on the system:
     State                  : disconnected
 """
 
-TWO_INTERFACES = CONNECTED.replace("There is 1 interface", "There are 2 interfaces") + """
+TWO_INTERFACES = (
+    CONNECTED.replace("There is 1 interface", "There are 2 interfaces")
+    + """
     Name                   : Wi-Fi 2
     Description            : USB Wireless Adapter
     GUID                   : 11111111-2222-3333-4444-555555555555
@@ -63,6 +71,7 @@ TWO_INTERFACES = CONNECTED.replace("There is 1 interface", "There are 2 interfac
     Interface type         : Secondary
     State                  : disconnected
 """
+)
 
 # Labels translated to a non-English language: only the *values* and the
 # order netsh prints them in are recognizable.
@@ -142,7 +151,9 @@ def test_rssi_from_quality_follows_microsoft_mapping():
     assert rssi_from_quality(100) == -50
     assert rssi_from_quality(50) == -75
     assert rssi_from_quality(92) == -54
-    assert rssi_from_quality(150) == -50   # clamped, never a fabricated value above range
+    assert (
+        rssi_from_quality(150) == -50
+    )  # clamped, never a fabricated value above range
 
 
 def test_parse_connected_interface():
@@ -151,12 +162,14 @@ def test_parse_connected_interface():
     m = metrics_from_interface(info, "Wi-Fi")
     assert m.interface_state == "connected"
     assert m.ssid == "OfficeNet"
-    assert m.bssid == "aa:bb:cc:dd:ee:01"           # normalised to lower case
+    assert m.bssid == "aa:bb:cc:dd:ee:01"  # normalised to lower case
     assert (m.band, m.channel, m.frequency_mhz) == ("5GHz", 36, 5180)
     assert m.phy_mode == "802.11ac"
     assert m.signal_pct == 92 and m.rssi_dbm == -54
     assert m.rx_bitrate_mbps == 866.7 and m.tx_bitrate_mbps == 780.0
-    assert m.noise_floor_dbm is None and m.snr_db is None   # not exposed on Windows - never invented
+    assert (
+        m.noise_floor_dbm is None and m.snr_db is None
+    )  # not exposed on Windows - never invented
 
 
 def test_parse_disconnected_interface_has_no_ap_fields():
@@ -194,9 +207,13 @@ def test_parse_networks_yields_one_entry_per_bssid():
     assert [(n.ssid, n.bssid, n.channel, n.band) for n in nets] == [
         ("OfficeNet", "aa:bb:cc:dd:ee:01", 36, "5GHz"),
         ("OfficeNet", "aa:bb:cc:dd:ee:02", 6, "2.4GHz"),
-        (None, "11:22:33:44:55:66", 11, "2.4GHz"),     # hidden SSID stays None, not ""
+        (None, "11:22:33:44:55:66", 11, "2.4GHz"),  # hidden SSID stays None, not ""
     ]
-    assert nets[0].rssi_dbm == -54 and nets[0].security == "WPA2-Personal" and nets[0].phy_mode == "802.11ac"
+    assert (
+        nets[0].rssi_dbm == -54
+        and nets[0].security == "WPA2-Personal"
+        and nets[0].phy_mode == "802.11ac"
+    )
     assert nets[2].security == "Open"
 
 
@@ -218,29 +235,43 @@ class _FakeRunner:
 
 @pytest.mark.asyncio
 async def test_adapter_reads_metrics_and_caches_ip_info(monkeypatch):
-    runner = _FakeRunner({"netsh wlan show interfaces": CONNECTED, "ipconfig": IPCONFIG})
+    runner = _FakeRunner(
+        {"netsh wlan show interfaces": CONNECTED, "ipconfig": IPCONFIG}
+    )
     monkeypatch.setattr(windows, "_run", runner)
     adapter = WindowsWifiAdapter()
 
     assert await adapter.get_active_interface() == "Wi-Fi"
     m = await adapter.get_metrics("Wi-Fi")
-    assert m.bssid == "aa:bb:cc:dd:ee:01" and m.gateway == "192.168.1.1" and m.ipv4_addresses == ["192.168.1.42"]
+    assert (
+        m.bssid == "aa:bb:cc:dd:ee:01"
+        and m.gateway == "192.168.1.1"
+        and m.ipv4_addresses == ["192.168.1.42"]
+    )
 
     await adapter.get_metrics("Wi-Fi")
-    assert sum(1 for c in runner.calls if c[0] == "ipconfig") == 1   # second read served from the 5s cache
+    assert (
+        sum(1 for c in runner.calls if c[0] == "ipconfig") == 1
+    )  # second read served from the 5s cache
 
 
 @pytest.mark.asyncio
 async def test_active_interface_prefers_connected_then_falls_back_to_first(monkeypatch):
-    monkeypatch.setattr(windows, "_run", _FakeRunner({"netsh wlan show interfaces": TWO_INTERFACES}))
+    monkeypatch.setattr(
+        windows, "_run", _FakeRunner({"netsh wlan show interfaces": TWO_INTERFACES})
+    )
     assert await WindowsWifiAdapter().get_active_interface() == "Wi-Fi"
-    monkeypatch.setattr(windows, "_run", _FakeRunner({"netsh wlan show interfaces": DISCONNECTED}))
+    monkeypatch.setattr(
+        windows, "_run", _FakeRunner({"netsh wlan show interfaces": DISCONNECTED})
+    )
     assert await WindowsWifiAdapter().get_active_interface() == "Wi-Fi"
 
 
 @pytest.mark.asyncio
 async def test_location_block_is_reported_not_mistaken_for_no_wifi(monkeypatch):
-    monkeypatch.setattr(windows, "_run", _FakeRunner({"netsh wlan show interfaces": LOCATION_BLOCKED}))
+    monkeypatch.setattr(
+        windows, "_run", _FakeRunner({"netsh wlan show interfaces": LOCATION_BLOCKED})
+    )
     adapter = WindowsWifiAdapter()
     assert await adapter.get_active_interface() is None
     assert adapter.last_issue == "location_permission"
@@ -250,18 +281,23 @@ async def test_location_block_is_reported_not_mistaken_for_no_wifi(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_scan_neighbors_returns_bssids(monkeypatch):
-    monkeypatch.setattr(windows, "_run", _FakeRunner({"netsh wlan show networks": NETWORKS}))
+    monkeypatch.setattr(
+        windows, "_run", _FakeRunner({"netsh wlan show networks": NETWORKS})
+    )
     nets = await WindowsWifiAdapter().scan_neighbors("Wi-Fi")
     assert len(nets) == 3 and all(n.bssid for n in nets)
 
 
 @pytest.mark.asyncio
 async def test_scan_neighbors_is_empty_when_location_blocked(monkeypatch):
-    monkeypatch.setattr(windows, "_run", _FakeRunner({"netsh wlan show networks": LOCATION_BLOCKED}))
+    monkeypatch.setattr(
+        windows, "_run", _FakeRunner({"netsh wlan show networks": LOCATION_BLOCKED})
+    )
     assert await WindowsWifiAdapter().scan_neighbors("Wi-Fi") == []
 
 
 def test_win32_dispatch_selects_the_windows_adapter(monkeypatch):
     from app.monitoring import wifi
+
     monkeypatch.setattr(wifi.sys, "platform", "win32")
     assert isinstance(wifi._build_adapter(), WindowsWifiAdapter)

@@ -23,6 +23,7 @@ literally timed out. `confidence` exists precisely to flag how much to
 trust either kind of estimate; a caller should never read `classification`
 without also showing `confidence` next to it.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -80,10 +81,15 @@ async def start_watch(conn: aiosqlite.Connection, event: RoamEventOut) -> None:
     if gateway_target is None and not external_targets:
         # Nothing to measure against - say so plainly rather than guessing.
         await roam_events_repo.update_interruption_result(
-            conn, event.id,
-            gateway_interruption_ms=None, internet_interruption_ms=None,
-            packet_loss_during_pct=None, peak_latency_ms=None,
-            success=None, classification=None, confidence="unknown",
+            conn,
+            event.id,
+            gateway_interruption_ms=None,
+            internet_interruption_ms=None,
+            packet_loss_during_pct=None,
+            peak_latency_ms=None,
+            success=None,
+            classification=None,
+            confidence="unknown",
         )
         return
 
@@ -100,17 +106,23 @@ async def start_watch(conn: aiosqlite.Connection, event: RoamEventOut) -> None:
     )
     _active_watches[event.id] = watch
 
-    task = asyncio.create_task(_run_watch(conn, watch, event.timestamp), name=f"roam-watch-{event.id}")
+    task = asyncio.create_task(
+        _run_watch(conn, watch, event.timestamp), name=f"roam-watch-{event.id}"
+    )
     task.add_done_callback(lambda _t: _active_watches.pop(event.id, None))
 
 
-async def _run_watch(conn: aiosqlite.Connection, watch: _Watch, roam_timestamp: str) -> None:
+async def _run_watch(
+    conn: aiosqlite.Connection, watch: _Watch, roam_timestamp: str
+) -> None:
     try:
         while True:
             await asyncio.sleep(_POLL_INTERVAL_SECONDS)
             elapsed_ms = (time.monotonic() - watch.start_monotonic) * 1000
 
-            recent = await measurements_repo.list_measurements(conn, start=roam_timestamp, limit=500)
+            recent = await measurements_repo.list_measurements(
+                conn, start=roam_timestamp, limit=500
+            )
             for m in recent:
                 if m.id in watch.seen_measurement_ids:
                     continue
@@ -118,15 +130,27 @@ async def _run_watch(conn: aiosqlite.Connection, watch: _Watch, roam_timestamp: 
                 is_gateway = m.target_id == watch.gateway_target_id
                 if not is_gateway and m.target_id not in watch.external_target_ids:
                     continue  # a target that isn't part of this roam's connectivity picture
-                watch.samples.append(_Sample(is_gateway=is_gateway, success=m.success, latency_ms=m.latency_ms))
+                watch.samples.append(
+                    _Sample(
+                        is_gateway=is_gateway,
+                        success=m.success,
+                        latency_ms=m.latency_ms,
+                    )
+                )
                 if m.success:
                     if is_gateway and watch.gateway_interruption_ms is None:
                         watch.gateway_interruption_ms = elapsed_ms
                     if not is_gateway and watch.internet_interruption_ms is None:
                         watch.internet_interruption_ms = elapsed_ms
 
-            gateway_done = watch.gateway_target_id is None or watch.gateway_interruption_ms is not None
-            internet_done = not watch.external_target_ids or watch.internet_interruption_ms is not None
+            gateway_done = (
+                watch.gateway_target_id is None
+                or watch.gateway_interruption_ms is not None
+            )
+            internet_done = (
+                not watch.external_target_ids
+                or watch.internet_interruption_ms is not None
+            )
             if gateway_done and internet_done:
                 await _finalize(conn, watch, timed_out=False)
                 return
@@ -136,10 +160,14 @@ async def _run_watch(conn: aiosqlite.Connection, watch: _Watch, roam_timestamp: 
     except asyncio.CancelledError:
         raise
     except Exception:
-        logger.exception("Roam interruption watch for event %s failed unexpectedly", watch.event_id)
+        logger.exception(
+            "Roam interruption watch for event %s failed unexpectedly", watch.event_id
+        )
 
 
-async def _finalize(conn: aiosqlite.Connection, watch: _Watch, *, timed_out: bool) -> None:
+async def _finalize(
+    conn: aiosqlite.Connection, watch: _Watch, *, timed_out: bool
+) -> None:
     total = len(watch.samples)
     failed = sum(1 for s in watch.samples if not s.success)
     packet_loss_during_pct = round(100 * failed / total, 1) if total else None
@@ -148,7 +176,11 @@ async def _finalize(conn: aiosqlite.Connection, watch: _Watch, *, timed_out: boo
 
     success = not timed_out
 
-    primary_ms = watch.internet_interruption_ms if watch.external_target_ids else watch.gateway_interruption_ms
+    primary_ms = (
+        watch.internet_interruption_ms
+        if watch.external_target_ids
+        else watch.gateway_interruption_ms
+    )
 
     classification: Optional[RoamClassification]
     if not success:
@@ -165,7 +197,8 @@ async def _finalize(conn: aiosqlite.Connection, watch: _Watch, *, timed_out: boo
     confidence = _estimate_confidence(total)
 
     await roam_events_repo.update_interruption_result(
-        conn, watch.event_id,
+        conn,
+        watch.event_id,
         gateway_interruption_ms=watch.gateway_interruption_ms,
         internet_interruption_ms=watch.internet_interruption_ms,
         packet_loss_during_pct=packet_loss_during_pct,
@@ -176,7 +209,11 @@ async def _finalize(conn: aiosqlite.Connection, watch: _Watch, *, timed_out: boo
     )
     logger.info(
         "Roam event %s interruption result: success=%s classification=%s confidence=%s (%d sample(s))",
-        watch.event_id, success, classification, confidence, total,
+        watch.event_id,
+        success,
+        classification,
+        confidence,
+        total,
     )
 
     if classification in ("poor", "failed"):
@@ -188,7 +225,8 @@ async def _finalize(conn: aiosqlite.Connection, watch: _Watch, *, timed_out: boo
                 f"Roaming to a new access point{ap_label} on {watch.ssid or watch.interface} "
                 f"was classified as {classification}.",
                 urgency=("critical" if classification == "failed" else "normal"),
-                key=f"roam-{classification}", cooldown_seconds=settings.notifications.cooldown_seconds,
+                key=f"roam-{classification}",
+                cooldown_seconds=settings.notifications.cooldown_seconds,
             )
 
 

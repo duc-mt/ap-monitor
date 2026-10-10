@@ -14,6 +14,7 @@ time, and walk-test mode's much faster 500ms sampling interval (Stage 11)
 would otherwise spawn `iw`/`nmcli` far more often than the underlying
 radio state actually changes.
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,14 +31,19 @@ _CACHE_TTL_SECONDS = 2.0
 def _build_adapter() -> WifiAdapter:
     if sys.platform == "darwin":
         from app.monitoring.wifi.macos import MacOSWifiAdapter
+
         return MacOSWifiAdapter()
     if sys.platform.startswith("linux"):
         from app.monitoring.wifi.linux import LinuxWifiAdapter
+
         return LinuxWifiAdapter()
     if sys.platform == "win32":
         from app.monitoring.wifi.windows import WindowsWifiAdapter
+
         return WindowsWifiAdapter()
-    raise RuntimeError(f"No WiFi adapter for platform: {sys.platform!r} (Linux, macOS and Windows only)")
+    raise RuntimeError(
+        f"No WiFi adapter for platform: {sys.platform!r} (Linux, macOS and Windows only)"
+    )
 
 
 _adapter: Optional[WifiAdapter] = None
@@ -59,7 +65,9 @@ async def get_active_wifi_interface() -> Optional[str]:
     return await _get_adapter().get_active_interface()
 
 
-async def get_wifi_metrics(interface: Optional[str] = None, *, use_cache: bool = True) -> WifiMetrics:
+async def get_wifi_metrics(
+    interface: Optional[str] = None, *, use_cache: bool = True
+) -> WifiMetrics:
     """
     A metrics snapshot for `interface`, or the currently active WiFi
     interface (Auto mode) when `interface` is None.
@@ -70,7 +78,9 @@ async def get_wifi_metrics(interface: Optional[str] = None, *, use_cache: bool =
     """
     target = interface if interface is not None else await get_active_wifi_interface()
     if target is None:
-        raise RuntimeError("No active WiFi interface found (Auto mode) and none specified.")
+        raise RuntimeError(
+            "No active WiFi interface found (Auto mode) and none specified."
+        )
 
     if use_cache:
         cached = _metrics_cache.get(target)
@@ -114,11 +124,15 @@ async def scan_environment(interface: Optional[str] = None) -> EnvironmentScanRe
 
     target = interface if interface is not None else await get_active_wifi_interface()
     if target is None:
-        raise RuntimeError("No active WiFi interface found (Auto mode) and none specified.")
+        raise RuntimeError(
+            "No active WiFi interface found (Auto mode) and none specified."
+        )
 
     current = await get_wifi_metrics(target, use_cache=False)
     raw_neighbors = await _get_adapter().scan_neighbors(target)
-    neighbors = [n for n in raw_neighbors if current.bssid is None or n.bssid != current.bssid]
+    neighbors = [
+        n for n in raw_neighbors if current.bssid is None or n.bssid != current.bssid
+    ]
     for n in neighbors:
         n.is_co_channel = current.channel is not None and n.channel == current.channel
 

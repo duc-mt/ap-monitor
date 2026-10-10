@@ -6,6 +6,7 @@ http://127.0.0.1:8766/api) - it never touches the database or performs
 pings itself, so `ap-monitor status` always reflects exactly what the
 dashboard would show.
 """
+
 from __future__ import annotations
 
 import json as jsonlib
@@ -20,8 +21,10 @@ import httpx
 
 DEFAULT_API_URL = "http://127.0.0.1:8766/api"
 
-TASK_NAME = "AP Monitor"                      # Windows scheduled task (scripts/install-windows.ps1)
-LAUNCH_AGENT = Path.home() / "Library" / "LaunchAgents" / "com.ap-monitor.agent.plist"   # macOS
+TASK_NAME = "AP Monitor"  # Windows scheduled task (scripts/install-windows.ps1)
+LAUNCH_AGENT = (
+    Path.home() / "Library" / "LaunchAgents" / "com.ap-monitor.agent.plist"
+)  # macOS
 
 
 def _is_running_hint() -> str:
@@ -38,7 +41,9 @@ class ApiClient:
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         try:
-            resp = httpx.request(method, f"{self.base_url}{path}", timeout=10.0, **kwargs)
+            resp = httpx.request(
+                method, f"{self.base_url}{path}", timeout=10.0, **kwargs
+            )
         except httpx.ConnectError:
             raise click.ClickException(
                 f"Could not reach the AP Monitor service at {self.base_url}.\n"
@@ -85,7 +90,9 @@ def print_table(rows: list[dict], columns: Optional[list[str]] = None) -> None:
 
 @click.group()
 @click.option(
-    "--api-url", default=DEFAULT_API_URL, envvar="AP_MONITOR_API_URL",
+    "--api-url",
+    default=DEFAULT_API_URL,
+    envvar="AP_MONITOR_API_URL",
     help="Base URL of the AP Monitor API.",
     show_default=True,
 )
@@ -99,7 +106,9 @@ def cli(ctx: click.Context, api_url: str):
 # status
 # --------------------------------------------------------------------------
 @cli.command()
-@click.option("--json", "as_json", is_flag=True, help="Print raw JSON instead of a summary.")
+@click.option(
+    "--json", "as_json", is_flag=True, help="Print raw JSON instead of a summary."
+)
 @click.pass_obj
 def status(client: ApiClient, as_json: bool):
     """Show current connectivity status."""
@@ -114,19 +123,31 @@ def status(client: ApiClient, as_json: bool):
     if data["ssid"] or data.get("bssid"):
         click.echo(f"  Network:  {data['ssid'] or '(name hidden)'}")
         click.echo(f"  BSSID:    {data.get('bssid') or 'not reported'}")
-        radio = [f"ch {data['channel']}" if data["channel"] is not None else None, data["band"],
-                 f"{data['channel_width_mhz']} MHz" if data.get("channel_width_mhz") else None, data["phy_mode"]]
+        radio = [
+            f"ch {data['channel']}" if data["channel"] is not None else None,
+            data["band"],
+            f"{data['channel_width_mhz']} MHz"
+            if data.get("channel_width_mhz")
+            else None,
+            data["phy_mode"],
+        ]
         if any(radio):
             click.echo(f"  Radio:    {'  ·  '.join(x for x in radio if x)}")
         if data["rssi_dbm"] is not None:
-            snr = f"  (SNR {data['snr_db']} dB)" if data.get("snr_db") is not None else ""
+            snr = (
+                f"  (SNR {data['snr_db']} dB)" if data.get("snr_db") is not None else ""
+            )
             click.echo(f"  Signal:   {data['rssi_dbm']} dBm{snr}")
         if data.get("tx_bitrate_mbps"):
             click.echo(f"  Link:     {round(data['tx_bitrate_mbps'])} Mbps")
         if data["wireless_quality_score"] is not None:
             click.echo(f"  Quality:  {data['wireless_quality_score']}/100")
     else:
-        click.echo("  not connected" if data["connectivity"]["wifi_connected"] is False else "  no AP information available")
+        click.echo(
+            "  not connected"
+            if data["connectivity"]["wifi_connected"] is False
+            else "  no AP information available"
+        )
     issue = data.get("wifi_issue")
     if issue:
         click.echo(click.style(f"  ! {issue['title']}", fg="yellow", bold=True))
@@ -135,15 +156,20 @@ def status(client: ApiClient, as_json: bool):
     click.echo()
     state = "ONLINE" if data["online"] else "OFFLINE"
     color = "green" if data["online"] else "red"
-    click.echo(f"Internet: {click.style(state, fg=color, bold=True)}  (quality: {data['quality']})")
+    click.echo(
+        f"Internet: {click.style(state, fg=color, bold=True)}  (quality: {data['quality']})"
+    )
     click.echo(f"Latency:     {_fmt_ms(data['latency_ms'])}")
     click.echo(f"Packet loss: {_fmt_pct(data['packet_loss'])}")
     click.echo(f"Jitter:      {_fmt_ms(data['jitter_ms'])}")
-    click.echo(f"Targets reachable: {data['targets_reachable']}/{data['targets_total']}")
-    click.echo(f"Monitoring: {'running' if data['monitoring_running'] else 'stopped'} "
-               f"(uptime {int(data['monitoring_uptime_seconds'])}s)")
+    click.echo(
+        f"Targets reachable: {data['targets_reachable']}/{data['targets_total']}"
+    )
+    click.echo(
+        f"Monitoring: {'running' if data['monitoring_running'] else 'stopped'} "
+        f"(uptime {int(data['monitoring_uptime_seconds'])}s)"
+    )
     click.echo(f"Connectivity: {data['connectivity']['overall'].replace('_', ' ')}")
-
 
 
 def _fmt_secs(seconds: float) -> str:
@@ -165,20 +191,41 @@ def _print_analysis(data: dict) -> None:
         return
     click.echo(f"{s['sample_count']} readings over {_fmt_secs(s['duration_seconds'])}")
     if s["rssi_avg"] is not None:
-        weak = f", {s['pct_samples_weak']:.0f}% below {s['weak_threshold_dbm']} dBm" if s["pct_samples_weak"] is not None else ""
-        click.echo(f"Signal: avg {s['rssi_avg']} dBm, best {s['rssi_max']}, worst {s['rssi_min']}{weak}")
+        weak = (
+            f", {s['pct_samples_weak']:.0f}% below {s['weak_threshold_dbm']} dBm"
+            if s["pct_samples_weak"] is not None
+            else ""
+        )
+        click.echo(
+            f"Signal: avg {s['rssi_avg']} dBm, best {s['rssi_max']}, worst {s['rssi_min']}{weak}"
+        )
     if not s["bssid_available"]:
-        click.echo(click.style("Access point addresses were not reported by the system, so the per-AP "
-                               "breakdown is unavailable (run `ap-monitor status` for how to fix this).", fg="yellow"))
+        click.echo(
+            click.style(
+                "Access point addresses were not reported by the system, so the per-AP "
+                "breakdown is unavailable (run `ap-monitor status` for how to fix this).",
+                fg="yellow",
+            )
+        )
         return
-    click.echo(f"Access points: {s['distinct_aps']}   AP changes: {s['ap_change_count']}")
+    click.echo(
+        f"Access points: {s['distinct_aps']}   AP changes: {s['ap_change_count']}"
+    )
     if data["aps"]:
         click.echo()
         print_table(
-            [{"BSSID": a["bssid"] or "unknown", "SSID": a["ssid"] or "", "Band": a["band"] or "",
-              "Ch": a["channel"] if a["channel"] is not None else "", "Time": _fmt_secs(a["total_seconds"]),
-              "Share": f"{a['share_pct']:.0f}%", "Avg dBm": a["rssi_avg"] if a["rssi_avg"] is not None else ""}
-             for a in data["aps"]]
+            [
+                {
+                    "BSSID": a["bssid"] or "unknown",
+                    "SSID": a["ssid"] or "",
+                    "Band": a["band"] or "",
+                    "Ch": a["channel"] if a["channel"] is not None else "",
+                    "Time": _fmt_secs(a["total_seconds"]),
+                    "Share": f"{a['share_pct']:.0f}%",
+                    "Avg dBm": a["rssi_avg"] if a["rssi_avg"] is not None else "",
+                }
+                for a in data["aps"]
+            ]
         )
     if data["ap_changes"]:
         click.echo()
@@ -186,12 +233,16 @@ def _print_analysis(data: dict) -> None:
         for c in data["ap_changes"]:
             note = "" if c["same_ssid"] else "  (different network)"
             note += "  (via a disconnect)" if c["via_disconnect"] else ""
-            click.echo(f"  {c['timestamp']}  {c['from_bssid']} -> {c['to_bssid']}  {c['rssi_before']} -> {c['rssi_after']} dBm{note}")
+            click.echo(
+                f"  {c['timestamp']}  {c['from_bssid']} -> {c['to_bssid']}  {c['rssi_before']} -> {c['rssi_after']} dBm{note}"
+            )
     if data["weak_stretches"]:
         click.echo()
         click.echo(f"Weak-signal stretches (below {s['weak_threshold_dbm']} dBm):")
         for w in data["weak_stretches"]:
-            click.echo(f"  {w['start']}  {_fmt_secs(w['duration_seconds'])}  worst {w['min_rssi_dbm']} dBm  on {w['bssid'] or 'unknown AP'}")
+            click.echo(
+                f"  {w['start']}  {_fmt_secs(w['duration_seconds'])}  worst {w['min_rssi_dbm']} dBm  on {w['bssid'] or 'unknown AP'}"
+            )
 
 
 def _fmt_ms(v: Optional[float]) -> str:
@@ -210,7 +261,9 @@ def _fmt_pct(v: Optional[float]) -> str:
 def start(client: ApiClient):
     """Start the monitoring loops."""
     result = client.post("/monitoring/start")
-    click.echo("Monitoring started." if result["running"] else "Monitoring did not start.")
+    click.echo(
+        "Monitoring started." if result["running"] else "Monitoring did not start."
+    )
 
 
 @cli.command()
@@ -218,7 +271,11 @@ def start(client: ApiClient):
 def stop(client: ApiClient):
     """Stop the monitoring loops."""
     result = client.post("/monitoring/stop")
-    click.echo("Monitoring stopped." if not result["running"] else "Monitoring is still running.")
+    click.echo(
+        "Monitoring stopped."
+        if not result["running"]
+        else "Monitoring is still running."
+    )
 
 
 # --------------------------------------------------------------------------
@@ -235,26 +292,51 @@ def targets_list(client: ApiClient):
     """List all configured targets."""
     rows = client.get("/targets")
     print_table(
-        [{"id": t["id"], "name": t["name"], "host": t["host"], "protocol": t["protocol"],
-          "interval": f"{t['interval_seconds']}s", "enabled": t["enabled"], "gateway": t["is_gateway"]}
-         for t in rows]
+        [
+            {
+                "id": t["id"],
+                "name": t["name"],
+                "host": t["host"],
+                "protocol": t["protocol"],
+                "interval": f"{t['interval_seconds']}s",
+                "enabled": t["enabled"],
+                "gateway": t["is_gateway"],
+            }
+            for t in rows
+        ]
     )
 
 
 @targets.command("add")
 @click.argument("name")
 @click.argument("host")
-@click.option("--protocol", type=click.Choice(["icmp", "tcp"]), default="icmp", show_default=True)
-@click.option("--port", type=int, default=None, help="TCP port (required for --protocol tcp unless you want the default of 443).")
-@click.option("--interval", type=int, default=5, show_default=True, help="Seconds between checks.")
+@click.option(
+    "--protocol", type=click.Choice(["icmp", "tcp"]), default="icmp", show_default=True
+)
+@click.option(
+    "--port",
+    type=int,
+    default=None,
+    help="TCP port (required for --protocol tcp unless you want the default of 443).",
+)
+@click.option(
+    "--interval", type=int, default=5, show_default=True, help="Seconds between checks."
+)
 @click.option("--gateway", is_flag=True, help="Mark as the local gateway.")
 @click.option("--disabled", is_flag=True, help="Create the target disabled.")
 @click.pass_obj
-def targets_add(client: ApiClient, name, host, protocol, port, interval, gateway, disabled):
+def targets_add(
+    client: ApiClient, name, host, protocol, port, interval, gateway, disabled
+):
     """Add a new monitored target, e.g. `ap-monitor targets add "Office WAN" 203.0.113.5`."""
     payload = {
-        "name": name, "host": host, "protocol": protocol, "port": port,
-        "interval_seconds": interval, "is_gateway": gateway, "enabled": not disabled,
+        "name": name,
+        "host": host,
+        "protocol": protocol,
+        "port": port,
+        "interval_seconds": interval,
+        "is_gateway": gateway,
+        "enabled": not disabled,
     }
     created = client.post("/targets", json=payload)
     click.echo(f"Created target #{created['id']} ({created['name']}).")
@@ -269,12 +351,22 @@ def targets_add(client: ApiClient, name, host, protocol, port, interval, gateway
 @click.option("--interval", type=int, default=None)
 @click.option("--enable/--disable", "enabled", default=None)
 @click.pass_obj
-def targets_edit(client: ApiClient, target_id, name, host, protocol, port, interval, enabled):
+def targets_edit(
+    client: ApiClient, target_id, name, host, protocol, port, interval, enabled
+):
     """Edit fields of an existing target by id."""
-    payload = {k: v for k, v in {
-        "name": name, "host": host, "protocol": protocol, "port": port,
-        "interval_seconds": interval, "enabled": enabled,
-    }.items() if v is not None}
+    payload = {
+        k: v
+        for k, v in {
+            "name": name,
+            "host": host,
+            "protocol": protocol,
+            "port": port,
+            "interval_seconds": interval,
+            "enabled": enabled,
+        }.items()
+        if v is not None
+    }
     if not payload:
         raise click.UsageError("Provide at least one field to change.")
     updated = client.put(f"/targets/{target_id}", json=payload)
@@ -295,19 +387,33 @@ def targets_remove(client: ApiClient, target_id):
 # history
 # --------------------------------------------------------------------------
 @cli.command()
-@click.option("--target", "target_id", type=int, default=None, help="Filter by target id.")
-@click.option("--range", "range_name", default="24h",
-              type=click.Choice(["1h", "24h", "7d", "30d"]), show_default=True)
+@click.option(
+    "--target", "target_id", type=int, default=None, help="Filter by target id."
+)
+@click.option(
+    "--range",
+    "range_name",
+    default="24h",
+    type=click.Choice(["1h", "24h", "7d", "30d"]),
+    show_default=True,
+)
 @click.option("--limit", type=int, default=20, show_default=True)
 @click.pass_obj
 def history(client: ApiClient, target_id, range_name, limit):
     """Show recent measurements and a summary for the chosen range."""
-    stats = client.get("/statistics", params={"range": range_name, **({"target_id": target_id} if target_id else {})})
+    stats = client.get(
+        "/statistics",
+        params={"range": range_name, **({"target_id": target_id} if target_id else {})},
+    )
     click.echo(f"Statistics ({range_name}):")
-    click.echo(f"  avg={_fmt_ms(stats['avg_latency_ms'])}  min={_fmt_ms(stats['min_latency_ms'])}  "
-               f"max={_fmt_ms(stats['max_latency_ms'])}  p95={_fmt_ms(stats['p95_latency_ms'])}")
-    click.echo(f"  packet loss={_fmt_pct(stats['packet_loss_pct'])}  jitter={_fmt_ms(stats['avg_jitter_ms'])}  "
-               f"samples={stats['sample_count']}")
+    click.echo(
+        f"  avg={_fmt_ms(stats['avg_latency_ms'])}  min={_fmt_ms(stats['min_latency_ms'])}  "
+        f"max={_fmt_ms(stats['max_latency_ms'])}  p95={_fmt_ms(stats['p95_latency_ms'])}"
+    )
+    click.echo(
+        f"  packet loss={_fmt_pct(stats['packet_loss_pct'])}  jitter={_fmt_ms(stats['avg_jitter_ms'])}  "
+        f"samples={stats['sample_count']}"
+    )
     click.echo()
 
     params = {"limit": limit}
@@ -315,9 +421,16 @@ def history(client: ApiClient, target_id, range_name, limit):
         params["target_id"] = target_id
     rows = client.get("/measurements", params=params)
     print_table(
-        [{"time": m["timestamp"], "target": m.get("target_name", m["target_id"]),
-          "latency_ms": m["latency_ms"], "loss%": m["packet_loss"], "success": m["success"]}
-         for m in rows]
+        [
+            {
+                "time": m["timestamp"],
+                "target": m.get("target_name", m["target_id"]),
+                "latency_ms": m["latency_ms"],
+                "loss%": m["packet_loss"],
+                "success": m["success"],
+            }
+            for m in rows
+        ]
     )
 
 
@@ -325,22 +438,46 @@ def history(client: ApiClient, target_id, range_name, limit):
 # export
 # --------------------------------------------------------------------------
 @cli.command()
-@click.option("--format", "fmt", type=click.Choice(["csv", "json"]), default="csv", show_default=True)
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["csv", "json"]),
+    default="csv",
+    show_default=True,
+)
 @click.option("--target", "target_id", type=int, default=None)
-@click.option("--range", "range_name", default="24h",
-              type=click.Choice(["1h", "24h", "7d", "30d"]), show_default=True,
-              help="Only used for --format json (the summarized report).")
-@click.option("--output", "-o", type=click.Path(), default=None, help="Write to this file instead of stdout.")
+@click.option(
+    "--range",
+    "range_name",
+    default="24h",
+    type=click.Choice(["1h", "24h", "7d", "30d"]),
+    show_default=True,
+    help="Only used for --format json (the summarized report).",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default=None,
+    help="Write to this file instead of stdout.",
+)
 @click.pass_obj
 def export(client: ApiClient, fmt, target_id, range_name, output):
     """Export measurement data as CSV, or a summarized report as JSON."""
     if fmt == "csv":
         params = {"target_id": target_id} if target_id else {}
-        resp = httpx.get(f"{client.base_url}/export/measurements.csv", params=params, timeout=30.0)
+        resp = httpx.get(
+            f"{client.base_url}/export/measurements.csv", params=params, timeout=30.0
+        )
         content = resp.text
     else:
-        params = {"range": range_name, **({"target_id": target_id} if target_id else {})}
-        resp = httpx.get(f"{client.base_url}/export/report.json", params=params, timeout=30.0)
+        params = {
+            "range": range_name,
+            **({"target_id": target_id} if target_id else {}),
+        }
+        resp = httpx.get(
+            f"{client.base_url}/export/report.json", params=params, timeout=30.0
+        )
         content = resp.text
 
     if output:
@@ -364,20 +501,47 @@ def wifi():
 def wifi_interfaces(client: ApiClient):
     """List WiFi-capable interfaces."""
     rows = client.get("/wifi/interfaces")
-    print_table([{"name": r["name"], "state": r["state"], "active": r["is_active"]} for r in rows])
+    print_table(
+        [
+            {"name": r["name"], "state": r["state"], "active": r["is_active"]}
+            for r in rows
+        ]
+    )
 
 
 @wifi.command("history")
-@click.option("--minutes", default=60, show_default=True, type=click.IntRange(1, 10080), help="Look-back window.")
-@click.option("--weak", "weak_dbm", default=-70, show_default=True, type=click.IntRange(-100, -30), help="Weak-signal threshold (dBm).")
+@click.option(
+    "--minutes",
+    default=60,
+    show_default=True,
+    type=click.IntRange(1, 10080),
+    help="Look-back window.",
+)
+@click.option(
+    "--weak",
+    "weak_dbm",
+    default=-70,
+    show_default=True,
+    type=click.IntRange(-100, -30),
+    help="Weak-signal threshold (dBm).",
+)
 @click.pass_obj
 def wifi_history(client: ApiClient, minutes: int, weak_dbm: int):
     """Which access points you were on recently, and how strong the signal was."""
-    _print_analysis(client.get("/wifi/analysis", params={"minutes": minutes, "weak_threshold_dbm": weak_dbm}))
+    _print_analysis(
+        client.get(
+            "/wifi/analysis",
+            params={"minutes": minutes, "weak_threshold_dbm": weak_dbm},
+        )
+    )
 
 
 @wifi.command("scan")
-@click.option("--interface", default=None, help="Interface to scan on (default: the currently active one).")
+@click.option(
+    "--interface",
+    default=None,
+    help="Interface to scan on (default: the currently active one).",
+)
 @click.pass_obj
 def wifi_scan(client: ApiClient, interface: Optional[str]):
     """
@@ -392,14 +556,24 @@ def wifi_scan(client: ApiClient, interface: Optional[str]):
         header += f"  (you're on channel {result['connected_channel']}, {result['connected_band']})"
     click.echo(header)
     click.echo()
-    neighbors = sorted(result["neighbors"], key=lambda n: -(n["rssi_dbm"] if n["rssi_dbm"] is not None else -999))
-    print_table([{
-        "ssid": n["ssid"] or "(hidden)",
-        "channel": f"{n['channel']}{'*' if n['is_co_channel'] else ''}" if n["channel"] is not None else "-",
-        "phy": n["phy_mode"] or "-",
-        "security": n["security"] or "-",
-        "rssi": f"{n['rssi_dbm']} dBm" if n["rssi_dbm"] is not None else "-",
-    } for n in neighbors])
+    neighbors = sorted(
+        result["neighbors"],
+        key=lambda n: -(n["rssi_dbm"] if n["rssi_dbm"] is not None else -999),
+    )
+    print_table(
+        [
+            {
+                "ssid": n["ssid"] or "(hidden)",
+                "channel": f"{n['channel']}{'*' if n['is_co_channel'] else ''}"
+                if n["channel"] is not None
+                else "-",
+                "phy": n["phy_mode"] or "-",
+                "security": n["security"] or "-",
+                "rssi": f"{n['rssi_dbm']} dBm" if n["rssi_dbm"] is not None else "-",
+            }
+            for n in neighbors
+        ]
+    )
     if any(n["is_co_channel"] for n in neighbors):
         click.echo()
         click.echo("* co-channel with your current connection")
@@ -423,15 +597,24 @@ def roam_list(client: ApiClient, interface: Optional[str], limit: int):
     if interface:
         params["interface"] = interface
     rows = client.get("/roam-events", params=params)
-    print_table([{
-        "time": r["timestamp"],
-        "ssid": r["ssid"] or "-",
-        "bssid change": f"{r['previous_bssid'] or '-'} -> {r['new_bssid'] or '-'}",
-        "interruption": _fmt_ms(r["internet_interruption_ms"] if r["internet_interruption_ms"] is not None
-                                 else r["gateway_interruption_ms"]),
-        "classification": r["classification"] or ("failed" if r["success"] is False else "-"),
-        "confidence": r["confidence"] or "-",
-    } for r in rows])
+    print_table(
+        [
+            {
+                "time": r["timestamp"],
+                "ssid": r["ssid"] or "-",
+                "bssid change": f"{r['previous_bssid'] or '-'} -> {r['new_bssid'] or '-'}",
+                "interruption": _fmt_ms(
+                    r["internet_interruption_ms"]
+                    if r["internet_interruption_ms"] is not None
+                    else r["gateway_interruption_ms"]
+                ),
+                "classification": r["classification"]
+                or ("failed" if r["success"] is False else "-"),
+                "confidence": r["confidence"] or "-",
+            }
+            for r in rows
+        ]
+    )
 
 
 # --------------------------------------------------------------------------
@@ -447,16 +630,31 @@ def walk_test():
 @click.option("--site", default=None)
 @click.option("--area", default=None)
 @click.option("--interface", required=True, help="WiFi interface to sample.")
-@click.option("--target", "target_ids", type=int, multiple=True,
-              help="Target id to also check latency against during the session (repeatable). Optional - "
-                   "walk-test mode never requires connectivity to run.")
+@click.option(
+    "--target",
+    "target_ids",
+    type=int,
+    multiple=True,
+    help="Target id to also check latency against during the session (repeatable). Optional - "
+    "walk-test mode never requires connectivity to run.",
+)
 @click.pass_obj
 def walk_test_start(client: ApiClient, name: str, site, area, interface, target_ids):
     """Start a new walk-test recording session."""
-    payload = {"name": name, "site": site, "area": area, "interface": interface, "target_ids": list(target_ids)}
+    payload = {
+        "name": name,
+        "site": site,
+        "area": area,
+        "interface": interface,
+        "target_ids": list(target_ids),
+    }
     result = client.post("/walk-tests", json=payload)
-    click.echo(f"Started walk-test session #{result['id']} ('{result['name']}') on {result['interface']}.")
-    click.echo(f"Run `ap-monitor walk-test stop {result['id']}` when you're done walking.")
+    click.echo(
+        f"Started walk-test session #{result['id']} ('{result['name']}') on {result['interface']}."
+    )
+    click.echo(
+        f"Run `ap-monitor walk-test stop {result['id']}` when you're done walking."
+    )
 
 
 @walk_test.command("stop")
@@ -465,28 +663,52 @@ def walk_test_start(client: ApiClient, name: str, site, area, interface, target_
 def walk_test_stop(client: ApiClient, walk_test_id: int):
     """Stop a recording walk-test session."""
     result = client.post(f"/walk-tests/{walk_test_id}/stop")
-    click.echo(f"Stopped walk-test session #{result['id']} ({result['sample_count']} sample(s) recorded).")
+    click.echo(
+        f"Stopped walk-test session #{result['id']} ({result['sample_count']} sample(s) recorded)."
+    )
 
 
 @walk_test.command("show")
 @click.argument("walk_test_id", type=int)
-@click.option("--weak", "weak_dbm", default=-70, show_default=True, type=click.IntRange(-100, -30), help="Weak-signal threshold (dBm).")
+@click.option(
+    "--weak",
+    "weak_dbm",
+    default=-70,
+    show_default=True,
+    type=click.IntRange(-100, -30),
+    help="Weak-signal threshold (dBm).",
+)
 @click.pass_obj
 def walk_test_show(client: ApiClient, walk_test_id: int, weak_dbm: int):
     """Show the result of a walk test: signal, weak spots, and the APs used."""
     session = client.get(f"/walk-tests/{walk_test_id}")
-    click.echo(f"{session['name']}  ({session['status']}, {session['sample_count']} samples)")
+    click.echo(
+        f"{session['name']}  ({session['status']}, {session['sample_count']} samples)"
+    )
     click.echo()
-    _print_analysis(client.get(f"/walk-tests/{walk_test_id}/analysis", params={"weak_threshold_dbm": weak_dbm}))
+    _print_analysis(
+        client.get(
+            f"/walk-tests/{walk_test_id}/analysis",
+            params={"weak_threshold_dbm": weak_dbm},
+        )
+    )
 
 
 @walk_test.command("export")
 @click.argument("walk_test_id", type=int)
-@click.option("--output", "-o", type=click.Path(dir_okay=False, writable=True), default=None, help="File to write (default: stdout).")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(dir_okay=False, writable=True),
+    default=None,
+    help="File to write (default: stdout).",
+)
 @click.pass_obj
 def walk_test_export(client: ApiClient, walk_test_id: int, output: Optional[str]):
     """Export every sample of a walk test as CSV."""
-    resp = httpx.get(f"{client.base_url}/walk-tests/{walk_test_id}/export", timeout=30.0)
+    resp = httpx.get(
+        f"{client.base_url}/walk-tests/{walk_test_id}/export", timeout=30.0
+    )
     if resp.status_code >= 400:
         raise click.ClickException(f"API error {resp.status_code}: {resp.text}")
     if output:
@@ -501,10 +723,20 @@ def walk_test_export(client: ApiClient, walk_test_id: int, output: Optional[str]
 def walk_test_list(client: ApiClient):
     """List walk-test sessions, most recent first."""
     rows = client.get("/walk-tests")
-    print_table([{
-        "id": r["id"], "name": r["name"], "site": r["site"] or "-", "interface": r["interface"],
-        "status": r["status"], "samples": r["sample_count"], "started": r["started_at"],
-    } for r in rows])
+    print_table(
+        [
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "site": r["site"] or "-",
+                "interface": r["interface"],
+                "status": r["status"],
+                "samples": r["sample_count"],
+                "started": r["started_at"],
+            }
+            for r in rows
+        ]
+    )
 
 
 # --------------------------------------------------------------------------
@@ -586,10 +818,23 @@ def _service_commands(action: str) -> list[list[str]]:
     """The OS commands that enable or disable autostart, one list per command."""
     if sys.platform == "win32":
         if action == "enable":
-            return [["schtasks", "/Change", "/TN", TASK_NAME, "/ENABLE"], ["schtasks", "/Run", "/TN", TASK_NAME]]
-        return [["schtasks", "/End", "/TN", TASK_NAME], ["schtasks", "/Change", "/TN", TASK_NAME, "/DISABLE"]]
+            return [
+                ["schtasks", "/Change", "/TN", TASK_NAME, "/ENABLE"],
+                ["schtasks", "/Run", "/TN", TASK_NAME],
+            ]
+        return [
+            ["schtasks", "/End", "/TN", TASK_NAME],
+            ["schtasks", "/Change", "/TN", TASK_NAME, "/DISABLE"],
+        ]
     if sys.platform == "darwin":
-        return [["launchctl", "load" if action == "enable" else "unload", "-w", str(LAUNCH_AGENT)]]
+        return [
+            [
+                "launchctl",
+                "load" if action == "enable" else "unload",
+                "-w",
+                str(LAUNCH_AGENT),
+            ]
+        ]
     if action == "enable":
         return [["sudo", "systemctl", "enable", "--now", "ap-monitor.service"]]
     return [["sudo", "systemctl", "disable", "ap-monitor.service"]]

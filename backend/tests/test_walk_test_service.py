@@ -4,6 +4,7 @@ The sample interval is set to the smallest value the settings model allows
 (100ms - see AppSettings.walk_test_sample_interval_ms) so these tests don't
 have to wait around at the spec's 500ms default.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -20,15 +21,24 @@ from app.services import settings_service, walk_test_service
 
 
 async def _fast_interval(db, ms=100):
-    await settings_service.update_settings(db, AppSettingsUpdate(walk_test_sample_interval_ms=ms))
+    await settings_service.update_settings(
+        db, AppSettingsUpdate(walk_test_sample_interval_ms=ms)
+    )
 
 
 @pytest.mark.asyncio
 async def test_start_creates_a_recording_session(db):
     await _fast_interval(db)
-    result = await walk_test_service.start_session(db, WalkTestCreate(
-        name="Office walk", site="HQ", area="2nd floor", interface="wlan0", target_ids=[],
-    ))
+    result = await walk_test_service.start_session(
+        db,
+        WalkTestCreate(
+            name="Office walk",
+            site="HQ",
+            area="2nd floor",
+            interface="wlan0",
+            target_ids=[],
+        ),
+    )
     try:
         assert result.status == "recording"
         assert result.name == "Office walk"
@@ -41,14 +51,28 @@ async def test_start_creates_a_recording_session(db):
 @pytest.mark.asyncio
 async def test_second_concurrent_session_is_rejected(db):
     await _fast_interval(db)
-    first = await walk_test_service.start_session(db, WalkTestCreate(
-        name="First", site=None, area=None, interface="wlan0", target_ids=[],
-    ))
+    first = await walk_test_service.start_session(
+        db,
+        WalkTestCreate(
+            name="First",
+            site=None,
+            area=None,
+            interface="wlan0",
+            target_ids=[],
+        ),
+    )
     try:
         with pytest.raises(RuntimeError):
-            await walk_test_service.start_session(db, WalkTestCreate(
-                name="Second", site=None, area=None, interface="wlan0", target_ids=[],
-            ))
+            await walk_test_service.start_session(
+                db,
+                WalkTestCreate(
+                    name="Second",
+                    site=None,
+                    area=None,
+                    interface="wlan0",
+                    target_ids=[],
+                ),
+            )
     finally:
         await walk_test_service.stop_session(db, first.id)
 
@@ -56,9 +80,16 @@ async def test_second_concurrent_session_is_rejected(db):
 @pytest.mark.asyncio
 async def test_stopping_an_already_stopped_session_is_idempotent(db):
     await _fast_interval(db)
-    result = await walk_test_service.start_session(db, WalkTestCreate(
-        name="Walk", site=None, area=None, interface="wlan0", target_ids=[],
-    ))
+    result = await walk_test_service.start_session(
+        db,
+        WalkTestCreate(
+            name="Walk",
+            site=None,
+            area=None,
+            interface="wlan0",
+            target_ids=[],
+        ),
+    )
     first_stop = await walk_test_service.stop_session(db, result.id)
     second_stop = await walk_test_service.stop_session(db, result.id)
     assert first_stop.status == second_stop.status == "stopped"
@@ -76,14 +107,27 @@ async def test_sample_loop_writes_wifi_metrics_rows(db, monkeypatch):
 
     async def fake_get_wifi_metrics(interface, use_cache=True):
         return WifiMetrics(
-            timestamp="t", interface=interface, interface_state="connected",
-            ssid="TestNet", bssid="AA:AA:AA:AA:AA:AA", channel=6, rssi_dbm=-52,
+            timestamp="t",
+            interface=interface,
+            interface_state="connected",
+            ssid="TestNet",
+            bssid="AA:AA:AA:AA:AA:AA",
+            channel=6,
+            rssi_dbm=-52,
         )
+
     monkeypatch.setattr(wifi, "get_wifi_metrics", fake_get_wifi_metrics)
 
-    result = await walk_test_service.start_session(db, WalkTestCreate(
-        name="Sampling test", site=None, area=None, interface="wlan0", target_ids=[],
-    ))
+    result = await walk_test_service.start_session(
+        db,
+        WalkTestCreate(
+            name="Sampling test",
+            site=None,
+            area=None,
+            interface="wlan0",
+            target_ids=[],
+        ),
+    )
     await asyncio.sleep(0.5)  # several 100ms ticks
     stopped = await walk_test_service.stop_session(db, result.id)
 
@@ -101,14 +145,23 @@ async def test_sample_loop_writes_wifi_metrics_rows(db, monkeypatch):
 async def test_sample_loop_survives_no_active_wifi_interface(db, monkeypatch):
     """Walk-test mode must keep sampling (with WiFi fields left None) even
     when there's no active WiFi association, rather than crashing the loop."""
+
     async def fake_get_wifi_metrics(interface, use_cache=True):
         raise RuntimeError("No active WiFi interface")
+
     monkeypatch.setattr(wifi, "get_wifi_metrics", fake_get_wifi_metrics)
     await _fast_interval(db)
 
-    result = await walk_test_service.start_session(db, WalkTestCreate(
-        name="No WiFi", site=None, area=None, interface="wlan0", target_ids=[],
-    ))
+    result = await walk_test_service.start_session(
+        db,
+        WalkTestCreate(
+            name="No WiFi",
+            site=None,
+            area=None,
+            interface="wlan0",
+            target_ids=[],
+        ),
+    )
     await asyncio.sleep(0.4)
     await walk_test_service.stop_session(db, result.id)
 
@@ -119,24 +172,38 @@ async def test_sample_loop_survives_no_active_wifi_interface(db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_ping_loop_updates_latency_when_targets_selected(db, monkeypatch):
-    target = await targets_repo.create_target(db, TargetCreate(name="Gateway", host="192.168.1.1"))
+    target = await targets_repo.create_target(
+        db, TargetCreate(name="Gateway", host="192.168.1.1")
+    )
 
     async def fake_get_wifi_metrics(interface, use_cache=True):
-        return WifiMetrics(timestamp="t", interface=interface, interface_state="connected")
+        return WifiMetrics(
+            timestamp="t", interface=interface, interface_state="connected"
+        )
+
     monkeypatch.setattr(wifi, "get_wifi_metrics", fake_get_wifi_metrics)
 
     class FakePingResult:
         avg_latency_ms = 12.5
         loss_pct = 0.0
         succeeded = 1
+
     async def fake_run_check(**kwargs):
         return FakePingResult()
+
     monkeypatch.setattr(walk_test_service, "run_check", fake_run_check)
 
     await _fast_interval(db)
-    result = await walk_test_service.start_session(db, WalkTestCreate(
-        name="With target", site=None, area=None, interface="wlan0", target_ids=[target.id],
-    ))
+    result = await walk_test_service.start_session(
+        db,
+        WalkTestCreate(
+            name="With target",
+            site=None,
+            area=None,
+            interface="wlan0",
+            target_ids=[target.id],
+        ),
+    )
     await asyncio.sleep(1.1)  # the ping loop only ticks once per second
     await walk_test_service.stop_session(db, result.id)
 

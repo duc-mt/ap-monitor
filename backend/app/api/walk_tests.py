@@ -17,7 +17,9 @@ router = APIRouter(prefix="/api/walk-tests", tags=["walk-tests"])
 
 
 @router.post("", response_model=WalkTestOut, status_code=201)
-async def start_walk_test(data: WalkTestCreate, db: aiosqlite.Connection = Depends(get_db)):
+async def start_walk_test(
+    data: WalkTestCreate, db: aiosqlite.Connection = Depends(get_db)
+):
     try:
         return await walk_test_service.start_session(db, data)
     except RuntimeError as e:
@@ -43,22 +45,30 @@ async def list_walk_tests(db: aiosqlite.Connection = Depends(get_db)):
 async def get_walk_test(walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)):
     result = await walk_tests_repo.get_walk_test(db, walk_test_id)
     if result is None:
-        raise HTTPException(status_code=404, detail=f"No walk-test session with id={walk_test_id}")
+        raise HTTPException(
+            status_code=404, detail=f"No walk-test session with id={walk_test_id}"
+        )
     return result
 
 
 @router.get("/{walk_test_id}/samples", response_model=list[WalkTestSampleOut])
-async def list_walk_test_samples(walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)):
+async def list_walk_test_samples(
+    walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)
+):
     result = await walk_tests_repo.get_walk_test(db, walk_test_id)
     if result is None:
-        raise HTTPException(status_code=404, detail=f"No walk-test session with id={walk_test_id}")
+        raise HTTPException(
+            status_code=404, detail=f"No walk-test session with id={walk_test_id}"
+        )
     return await walk_tests_repo.list_samples(db, walk_test_id)
 
 
 @router.get("/{walk_test_id}/analysis", response_model=SignalAnalysis)
 async def analyze_walk_test(
     walk_test_id: int,
-    weak_threshold_dbm: int = Query(ap_analysis_service.DEFAULT_WEAK_THRESHOLD_DBM, ge=-100, le=-30),
+    weak_threshold_dbm: int = Query(
+        ap_analysis_service.DEFAULT_WEAK_THRESHOLD_DBM, ge=-100, le=-30
+    ),
     max_points: int = Query(ap_analysis_service.DEFAULT_MAX_POINTS, ge=50, le=5000),
     db: aiosqlite.Connection = Depends(get_db),
 ):
@@ -67,18 +77,38 @@ async def analyze_walk_test(
     if await walk_tests_repo.get_walk_test(db, walk_test_id) is None:
         raise HTTPException(status_code=404, detail="Walk test not found")
     samples = await walk_tests_repo.list_samples(db, walk_test_id)
-    return ap_analysis_service.analyze(samples, weak_threshold_dbm=weak_threshold_dbm, max_points=max_points)
+    return ap_analysis_service.analyze(
+        samples, weak_threshold_dbm=weak_threshold_dbm, max_points=max_points
+    )
 
 
 _CSV_COLUMNS = (
-    "timestamp", "interface_state", "ssid", "bssid", "band", "channel", "frequency_mhz", "rssi_dbm", "signal_pct",
-    "noise_floor_dbm", "snr_db", "phy_mode", "channel_width_mhz", "mcs_index", "tx_bitrate_mbps",
-    "rx_bitrate_mbps", "latency_ms", "packet_loss_pct", "reachable",
+    "timestamp",
+    "interface_state",
+    "ssid",
+    "bssid",
+    "band",
+    "channel",
+    "frequency_mhz",
+    "rssi_dbm",
+    "signal_pct",
+    "noise_floor_dbm",
+    "snr_db",
+    "phy_mode",
+    "channel_width_mhz",
+    "mcs_index",
+    "tx_bitrate_mbps",
+    "rx_bitrate_mbps",
+    "latency_ms",
+    "packet_loss_pct",
+    "reachable",
 )
 
 
 @router.get("/{walk_test_id}/export")
-async def export_walk_test(walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)):
+async def export_walk_test(
+    walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)
+):
     """Every recorded sample as CSV, for Excel or a heat-map tool."""
     session = await walk_tests_repo.get_walk_test(db, walk_test_id)
     if session is None:
@@ -88,18 +118,29 @@ async def export_walk_test(walk_test_id: int, db: aiosqlite.Connection = Depends
     writer = csv.writer(buf)
     writer.writerow(_CSV_COLUMNS)
     for smp in samples:
-        writer.writerow(["" if getattr(smp, c) is None else getattr(smp, c) for c in _CSV_COLUMNS])
+        writer.writerow(
+            ["" if getattr(smp, c) is None else getattr(smp, c) for c in _CSV_COLUMNS]
+        )
     safe = re.sub(r"[^A-Za-z0-9_-]+", "-", session.name).strip("-") or "walk-test"
     return Response(
-        content=buf.getvalue(), media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="walk-test-{walk_test_id}-{safe}.csv"'},
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="walk-test-{walk_test_id}-{safe}.csv"'
+        },
     )
 
 
 @router.delete("/{walk_test_id}", status_code=204)
-async def delete_walk_test(walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)):
+async def delete_walk_test(
+    walk_test_id: int, db: aiosqlite.Connection = Depends(get_db)
+):
     if walk_test_service.active_walk_test_id() == walk_test_id:
-        raise HTTPException(status_code=409, detail="Stop the session before deleting it.")
+        raise HTTPException(
+            status_code=409, detail="Stop the session before deleting it."
+        )
     deleted = await walk_tests_repo.delete_walk_test(db, walk_test_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"No walk-test session with id={walk_test_id}")
+        raise HTTPException(
+            status_code=404, detail=f"No walk-test session with id={walk_test_id}"
+        )

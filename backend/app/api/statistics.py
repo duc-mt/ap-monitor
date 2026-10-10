@@ -22,7 +22,11 @@ async def get_statistics(
 ):
     try:
         return await statistics_service.compute_statistics(
-            db, range_name=range, start=start, end=end, target_id=target_id  # type: ignore[arg-type]
+            db,
+            range_name=range,
+            start=start,
+            end=end,
+            target_id=target_id,  # type: ignore[arg-type]
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

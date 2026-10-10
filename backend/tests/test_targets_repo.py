@@ -10,7 +10,9 @@ from app.monitoring import network_info
 
 @pytest.mark.asyncio
 async def test_create_and_get_target(db):
-    created = await targets_repo.create_target(db, TargetCreate(name="Router", host="192.168.1.1", protocol="icmp"))
+    created = await targets_repo.create_target(
+        db, TargetCreate(name="Router", host="192.168.1.1", protocol="icmp")
+    )
     fetched = await targets_repo.get_target(db, created.id)
     assert fetched is not None
     assert fetched.name == "Router"
@@ -21,15 +23,21 @@ async def test_create_and_get_target(db):
 @pytest.mark.asyncio
 async def test_list_targets_orders_gateway_first(db):
     await targets_repo.create_target(db, TargetCreate(name="DNS", host="8.8.8.8"))
-    await targets_repo.create_target(db, TargetCreate(name="Gateway", host="192.168.1.1", is_gateway=True))
+    await targets_repo.create_target(
+        db, TargetCreate(name="Gateway", host="192.168.1.1", is_gateway=True)
+    )
     targets = await targets_repo.list_targets(db)
     assert targets[0].is_gateway is True
 
 
 @pytest.mark.asyncio
 async def test_update_target_partial(db):
-    created = await targets_repo.create_target(db, TargetCreate(name="DNS", host="8.8.8.8", interval_seconds=5))
-    updated = await targets_repo.update_target(db, created.id, TargetUpdate(interval_seconds=30))
+    created = await targets_repo.create_target(
+        db, TargetCreate(name="DNS", host="8.8.8.8", interval_seconds=5)
+    )
+    updated = await targets_repo.update_target(
+        db, created.id, TargetUpdate(interval_seconds=30)
+    )
     assert updated is not None
     assert updated.interval_seconds == 30
     assert updated.host == "8.8.8.8"  # untouched
@@ -43,7 +51,9 @@ async def test_update_missing_target_returns_none(db):
 
 @pytest.mark.asyncio
 async def test_delete_target(db):
-    created = await targets_repo.create_target(db, TargetCreate(name="DNS", host="8.8.8.8"))
+    created = await targets_repo.create_target(
+        db, TargetCreate(name="DNS", host="8.8.8.8")
+    )
     assert await targets_repo.delete_target(db, created.id) is True
     assert await targets_repo.get_target(db, created.id) is None
     assert await targets_repo.delete_target(db, created.id) is False
@@ -86,7 +96,9 @@ async def test_detect_gateway_on_macos_falls_back_on_error(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_detect_gateway_on_linux_falls_back_when_proc_net_route_is_unparseable(monkeypatch):
+async def test_detect_gateway_on_linux_falls_back_when_proc_net_route_is_unparseable(
+    monkeypatch,
+):
     """With the macOS branch now gone (platform isn't darwin) this exercises
     the Linux /proc/net/route path's own fallback - a gap left once the
     Windows branch (and its two tests) was removed, since the macOS tests
@@ -94,6 +106,7 @@ async def test_detect_gateway_on_linux_falls_back_when_proc_net_route_is_unparse
     monkeypatch.setattr(targets_repo.sys, "platform", "linux")
 
     import builtins
+
     real_open = builtins.open
 
     def fake_open(path, *args, **kwargs):

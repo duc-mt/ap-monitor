@@ -11,6 +11,7 @@ AP_MONITOR_AUTOSTART is forced to "0" before app.main is ever
 imported so the FastAPI lifespan never spawns real monitoring loops
 against the live internet during API tests.
 """
+
 from __future__ import annotations
 
 import os
@@ -27,13 +28,22 @@ from app.database import connection as db_connection
 from app.monitoring import wifi
 from app.monitoring import scheduler as monitoring_scheduler
 from app.monitoring.pinger import PingBatchResult
-from app.services import connectivity_service, notification_service, roam_interruption_service, roaming_service, settings_service, walk_test_service
+from app.services import (
+    connectivity_service,
+    notification_service,
+    roam_interruption_service,
+    roaming_service,
+    settings_service,
+    walk_test_service,
+)
 
 
 async def _fake_run_check(*, host, protocol, port, count, timeout):
     """Stand-in for app.monitoring.pinger.run_check so that if a test starts
     the real MonitoringManager, it never actually touches the network."""
-    return PingBatchResult(method=protocol, attempted=count, succeeded=count, latencies=[1.0] * count)
+    return PingBatchResult(
+        method=protocol, attempted=count, succeeded=count, latencies=[1.0] * count
+    )
 
 
 async def _fake_get_wifi_metrics(interface=None, *, use_cache=True):

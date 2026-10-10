@@ -7,6 +7,7 @@ spawns unless CREATE_NO_WINDOW is passed - so a monitor that runs `ping` and
 `netsh` every few seconds would flash windows constantly. `NO_WINDOW` is an
 empty dict everywhere else, so call sites can always splat it.
 """
+
 from __future__ import annotations
 
 import sys
@@ -14,7 +15,9 @@ from typing import Any, Dict
 
 _CREATE_NO_WINDOW = 0x08000000
 
-NO_WINDOW: Dict[str, Any] = {"creationflags": _CREATE_NO_WINDOW} if sys.platform == "win32" else {}
+NO_WINDOW: Dict[str, Any] = (
+    {"creationflags": _CREATE_NO_WINDOW} if sys.platform == "win32" else {}
+)
 
 
 def oem_encoding() -> str:
@@ -24,6 +27,7 @@ def oem_encoding() -> str:
     if sys.platform == "win32":
         try:
             import ctypes
+
             return f"cp{ctypes.windll.kernel32.GetOEMCP()}"  # type: ignore[attr-defined]
         except Exception:
             return "utf-8"

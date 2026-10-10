@@ -10,7 +10,9 @@ _SETTINGS_KEY = "app_settings"
 
 
 async def load_raw_settings(conn: aiosqlite.Connection) -> dict | None:
-    async with conn.execute("SELECT value FROM settings WHERE key = ?", (_SETTINGS_KEY,)) as cursor:
+    async with conn.execute(
+        "SELECT value FROM settings WHERE key = ?", (_SETTINGS_KEY,)
+    ) as cursor:
         row = await cursor.fetchone()
     if row is None:
         return None

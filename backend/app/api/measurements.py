@@ -20,4 +20,6 @@ async def list_measurements(
     limit: int = Query(default=1000, ge=1, le=20000),
     db: aiosqlite.Connection = Depends(get_db),
 ):
-    return await measurements_repo.list_measurements(db, target_id=target_id, start=start, end=end, limit=limit)
+    return await measurements_repo.list_measurements(
+        db, target_id=target_id, start=start, end=end, limit=limit
+    )

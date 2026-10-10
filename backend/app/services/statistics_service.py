@@ -63,8 +63,12 @@ async def compute_statistics(
     range_start, range_end = resolve_range(range_name, start, end)
     start_iso, end_iso = range_start.isoformat(), range_end.isoformat()
 
-    latencies = await measurements_repo.latencies_in_range(conn, target_id=target_id, start=start_iso, end=end_iso)
-    agg = await measurements_repo.aggregate_in_range(conn, target_id=target_id, start=start_iso, end=end_iso)
+    latencies = await measurements_repo.latencies_in_range(
+        conn, target_id=target_id, start=start_iso, end=end_iso
+    )
+    agg = await measurements_repo.aggregate_in_range(
+        conn, target_id=target_id, start=start_iso, end=end_iso
+    )
 
     sorted_latencies = sorted(latencies)
     duration_seconds = 0.0
@@ -81,12 +85,22 @@ async def compute_statistics(
         range_end=end_iso,
         target_id=target_id,
         sample_count=agg.get("sample_count") or 0,
-        avg_latency_ms=round(sum(sorted_latencies) / len(sorted_latencies), 2) if sorted_latencies else None,
+        avg_latency_ms=round(sum(sorted_latencies) / len(sorted_latencies), 2)
+        if sorted_latencies
+        else None,
         min_latency_ms=sorted_latencies[0] if sorted_latencies else None,
         max_latency_ms=sorted_latencies[-1] if sorted_latencies else None,
-        median_latency_ms=round(pystats.median(sorted_latencies), 2) if sorted_latencies else None,
-        p95_latency_ms=round(percentile(sorted_latencies, 95), 2) if sorted_latencies else None,
-        packet_loss_pct=round(agg["avg_packet_loss"], 2) if agg.get("avg_packet_loss") is not None else None,
-        avg_jitter_ms=round(agg["avg_jitter"], 2) if agg.get("avg_jitter") is not None else None,
+        median_latency_ms=round(pystats.median(sorted_latencies), 2)
+        if sorted_latencies
+        else None,
+        p95_latency_ms=round(percentile(sorted_latencies, 95), 2)
+        if sorted_latencies
+        else None,
+        packet_loss_pct=round(agg["avg_packet_loss"], 2)
+        if agg.get("avg_packet_loss") is not None
+        else None,
+        avg_jitter_ms=round(agg["avg_jitter"], 2)
+        if agg.get("avg_jitter") is not None
+        else None,
         monitoring_duration_seconds=duration_seconds,
     )

@@ -13,6 +13,7 @@ app/monitoring/wifi/macos.py: these tests confirm our code does what we
 intended with the CoreWLAN API *as documented*, not that the real
 framework behaves exactly as documented on every macOS version.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -76,7 +77,11 @@ def _install_fake_corewlan(monkeypatch, *, powered_on=True, running=True):
             return powered_on
 
         def interfaceState(self):
-            return fake.kCWInterfaceStateRunning if running else fake.kCWInterfaceStateInactive
+            return (
+                fake.kCWInterfaceStateRunning
+                if running
+                else fake.kCWInterfaceStateInactive
+            )
 
         def ssid(self):
             return "MyMacWifi"
@@ -143,8 +148,11 @@ def _ip_info_responder(ip="10.0.1.55\n", gw="gateway: 10.0.1.1\n", dns=""):
         if cmd[0] == "scutil":
             return FakeProc(dns)
         if cmd[0].endswith("airport"):
-            raise AssertionError("airport -I should not be called when CoreWLAN succeeds")
+            raise AssertionError(
+                "airport -I should not be called when CoreWLAN succeeds"
+            )
         raise AssertionError(f"Unexpected command: {cmd}")
+
     return fake_exec
 
 
@@ -168,7 +176,9 @@ async def test_corewlan_happy_path_maps_every_enum_correctly(monkeypatch):
     assert m.channel == 149
     assert m.channel_width_mhz == 80
     assert m.band == "5GHz"
-    assert m.mcs_index is None  # CoreWLAN has no MCS accessor - must stay None, not guessed
+    assert (
+        m.mcs_index is None
+    )  # CoreWLAN has no MCS accessor - must stay None, not guessed
     assert m.ipv4_addresses == ["10.0.1.55"]
     assert m.gateway == "10.0.1.1"
 
@@ -275,7 +285,9 @@ AIRPORT_DATA_SAMPLE = """Wi-Fi:
 
 
 @pytest.mark.asyncio
-async def test_scan_neighbors_uses_system_profiler_and_excludes_current_network(monkeypatch):
+async def test_scan_neighbors_uses_system_profiler_and_excludes_current_network(
+    monkeypatch,
+):
     async def fake_exec(*cmd, **kwargs):
         assert cmd == ("system_profiler", "SPAirPortDataType")
         return FakeProc(AIRPORT_DATA_SAMPLE)
@@ -288,7 +300,9 @@ async def test_scan_neighbors_uses_system_profiler_and_excludes_current_network(
 
     assert len(neighbors) == 2  # "MyHomeWifi" (the current network) must not appear
     assert {n.ssid for n in neighbors} == {"NeighborNet1", "NeighborNet2"}
-    assert all(n.bssid is None for n in neighbors)  # never available from this data source
+    assert all(
+        n.bssid is None for n in neighbors
+    )  # never available from this data source
     n2 = next(n for n in neighbors if n.ssid == "NeighborNet2")
     assert n2.channel == 36
     assert n2.channel_width_mhz == 80
@@ -318,7 +332,9 @@ async def test_get_metrics_never_runs_system_profiler_on_either_path(monkeypatch
     async def recording_exec(*cmd, **kwargs):
         executed.append(cmd)
         if cmd[0].endswith("airport"):
-            return FakeProc("     agrCtlRSSI: -58\n          state: running\n           SSID: X\n")
+            return FakeProc(
+                "     agrCtlRSSI: -58\n          state: running\n           SSID: X\n"
+            )
         return FakeProc("")
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", recording_exec)
@@ -327,6 +343,7 @@ async def test_get_metrics_never_runs_system_profiler_on_either_path(monkeypatch
     _install_fake_corewlan(monkeypatch)
     sys.modules.pop(MODULE_UNDER_TEST, None)
     from app.monitoring.wifi.macos import MacOSWifiAdapter
+
     await MacOSWifiAdapter().get_metrics("en0")
 
     # airport -I fallback path (pyobjc unavailable)
@@ -341,6 +358,7 @@ async def test_get_metrics_never_runs_system_profiler_on_either_path(monkeypatch
     monkeypatch.setattr(builtins, "__import__", blocking_import)
     sys.modules.pop(MODULE_UNDER_TEST, None)
     from app.monitoring.wifi.macos import MacOSWifiAdapter as FallbackAdapter
+
     await FallbackAdapter().get_metrics("en0")
 
     assert executed, "expected at least the ip-info commands to run"

@@ -13,4 +13,6 @@ router = APIRouter(prefix="/api", tags=["status"])
 
 @router.get("/status", response_model=StatusResponse)
 async def get_status(db: aiosqlite.Connection = Depends(get_db)):
-    return await compute_status(db, monitoring_started_at=manager.started_at, monitoring_running=manager.running)
+    return await compute_status(
+        db, monitoring_started_at=manager.started_at, monitoring_running=manager.running
+    )

@@ -11,6 +11,7 @@ class ClassificationThresholds(BaseModel):
     the UI reads these back from /api/settings and renders whatever it is
     given, so changing a number here changes the dashboard immediately.
     """
+
     excellent_latency_ms: float = 30
     excellent_packet_loss_pct: float = 1
     good_latency_ms: float = 60
@@ -33,16 +34,22 @@ class AppSettings(BaseModel):
     # Monitoring
     ping_timeout_seconds: float = Field(default=2.0, ge=0.2, le=30)
     pings_per_check: int = Field(
-        default=3, ge=1, le=10,
-        description="Number of echo/connect attempts per check ('retries' in the UI)."
+        default=3,
+        ge=1,
+        le=10,
+        description="Number of echo/connect attempts per check ('retries' in the UI).",
     )
     default_target_interval_seconds: int = Field(default=5, ge=1, le=3600)
     wifi_poll_interval_seconds: int = Field(
-        default=5, ge=1, le=300,
-        description="How often the background loop polls WiFi metrics and checks for roaming (Stage 9)."
+        default=5,
+        ge=1,
+        le=300,
+        description="How often the background loop polls WiFi metrics and checks for roaming (Stage 9).",
     )
     roam_watch_timeout_seconds: int = Field(
-        default=30, ge=5, le=300,
+        default=30,
+        ge=5,
+        le=300,
         description=(
             "How long (Stage 10) to keep watching connectivity after a confirmed roam before giving "
             "up and marking it 'failed'. Also bounds how stale the 'Estimated Connectivity "
@@ -50,11 +57,15 @@ class AppSettings(BaseModel):
         ),
     )
     walk_test_sample_interval_ms: int = Field(
-        default=500, ge=100, le=5000,
-        description="How often a recording walk-test session samples WiFi metrics (Stage 11)."
+        default=500,
+        ge=100,
+        le=5000,
+        description="How often a recording walk-test session samples WiFi metrics (Stage 11).",
     )
     wireless_quality_window_minutes: int = Field(
-        default=30, ge=5, le=1440,
+        default=30,
+        ge=5,
+        le=1440,
         description=(
             "Lookback window (Stage 12) the 0-100 Wireless Quality Score uses for its "
             "latency/packet-loss/jitter averages and its disconnect/failed-roam penalty counts. "
@@ -77,8 +88,12 @@ class AppSettings(BaseModel):
     # "unavailable" instead - see connectivity_service._derive_overall.
     internet_quorum: Literal["any", "all"] = "any"
 
-    notifications: NotificationPreferences = Field(default_factory=NotificationPreferences)
-    classification: ClassificationThresholds = Field(default_factory=ClassificationThresholds)
+    notifications: NotificationPreferences = Field(
+        default_factory=NotificationPreferences
+    )
+    classification: ClassificationThresholds = Field(
+        default_factory=ClassificationThresholds
+    )
 
     # Data lifecycle
     data_retention_days: int = Field(default=30, ge=1, le=3650)
@@ -91,6 +106,7 @@ class AppSettings(BaseModel):
 
 class AppSettingsUpdate(BaseModel):
     """All fields optional so PUT /api/settings can be a partial patch."""
+
     ping_timeout_seconds: Optional[float] = Field(default=None, ge=0.2, le=30)
     pings_per_check: Optional[int] = Field(default=None, ge=1, le=10)
     default_target_interval_seconds: Optional[int] = Field(default=None, ge=1, le=3600)

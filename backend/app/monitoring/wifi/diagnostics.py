@@ -8,6 +8,7 @@ blank and roaming can never be detected, with no error anywhere. A monitor
 that silently shows nothing is indistinguishable from a broken one, so every
 such case is surfaced as a WifiIssue in /api/status.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -44,12 +45,21 @@ def _location_help() -> str:
 
 def issue_for(code: str) -> WifiIssue:
     if code == "location_permission":
-        return WifiIssue(code=code, title="WiFi details are hidden by the OS", detail=_location_help())
+        return WifiIssue(
+            code=code,
+            title="WiFi details are hidden by the OS",
+            detail=_location_help(),
+        )
     if code == "bssid_unavailable":
         if sys.platform in _LOCATION_HELP:
-            return WifiIssue(code=code, title="Connected AP address (BSSID) not reported", detail=_location_help())
+            return WifiIssue(
+                code=code,
+                title="Connected AP address (BSSID) not reported",
+                detail=_location_help(),
+            )
         return WifiIssue(
-            code=code, title="Connected AP address (BSSID) not reported",
+            code=code,
+            title="Connected AP address (BSSID) not reported",
             detail=(
                 "NetworkManager/iw did not report the BSSID of the connected access point, so "
                 "AP changes and roaming cannot be detected. Check that the adapter is managed "
@@ -58,18 +68,21 @@ def issue_for(code: str) -> WifiIssue:
         )
     if code == "missing_tools":
         return WifiIssue(
-            code=code, title="Required WiFi tools are not installed",
+            code=code,
+            title="Required WiFi tools are not installed",
             detail="AP Monitor needs `nmcli` (NetworkManager) and `iw` on Linux. Install them, e.g. "
-                   "`sudo apt install network-manager iw`, then restart the backend.",
+            "`sudo apt install network-manager iw`, then restart the backend.",
         )
     if code == "no_wifi_interface":
         return WifiIssue(
-            code=code, title="No active WiFi connection found",
+            code=code,
+            title="No active WiFi connection found",
             detail="AP Monitor reads the WiFi adapter's association. Make sure WiFi is turned on and "
-                   "connected to a network (a wired-only connection is not monitored).",
+            "connected to a network (a wired-only connection is not monitored).",
         )
     return WifiIssue(
-        code="adapter_error", title="Could not read the WiFi adapter",
+        code="adapter_error",
+        title="Could not read the WiFi adapter",
         detail="The platform WiFi tool failed unexpectedly. Check the backend log for details.",
     )
 
@@ -86,6 +99,8 @@ def diagnose(metrics: WifiMetrics) -> Optional[WifiIssue]:
 def no_interface_issue() -> WifiIssue:
     """The issue for 'no active WiFi interface at all', checking first
     whether the cause is simply that the Linux tooling is missing."""
-    if sys.platform.startswith("linux") and (shutil.which("nmcli") is None or shutil.which("iw") is None):
+    if sys.platform.startswith("linux") and (
+        shutil.which("nmcli") is None or shutil.which("iw") is None
+    ):
         return issue_for("missing_tools")
     return issue_for("no_wifi_interface")

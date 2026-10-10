@@ -8,6 +8,7 @@ second at most) a single shared connection guarded by an asyncio.Lock for
 writes is simpler and just as fast as a connection pool, and avoids
 "database is locked" errors that a naive multi-connection setup would hit.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -55,7 +56,9 @@ async def close_db() -> None:
 
 def get_connection() -> aiosqlite.Connection:
     if _connection is None:
-        raise RuntimeError("Database has not been initialized yet (call init_db() first)")
+        raise RuntimeError(
+            "Database has not been initialized yet (call init_db() first)"
+        )
     return _connection
 
 

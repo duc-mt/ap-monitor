@@ -11,6 +11,7 @@ to read. When a real console is attached nothing here changes anything.
 Host, port and data directory come from the same environment variables as
 every other way of starting the app (AP_MONITOR_HOST / _PORT / _DATA_DIR).
 """
+
 from __future__ import annotations
 
 import sys

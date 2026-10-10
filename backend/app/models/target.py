@@ -75,7 +75,9 @@ class TargetUpdate(BaseModel):
     port: Optional[int] = Field(default=None, ge=1, le=65535)
     is_gateway: Optional[bool] = None
     enabled: Optional[bool] = None
-    interval_seconds: Optional[int] = Field(default=None, ge=MIN_INTERVAL_SECONDS, le=3600)
+    interval_seconds: Optional[int] = Field(
+        default=None, ge=MIN_INTERVAL_SECONDS, le=3600
+    )
 
     @field_validator("host")
     @classmethod

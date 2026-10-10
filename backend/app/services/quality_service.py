@@ -14,6 +14,7 @@ Two related but distinct things live here:
   connection is never penalized just because one optional reading happened
   to be unavailable.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -27,18 +28,29 @@ from app.models.status import Quality
 
 
 def classify(
-    latency_ms: Optional[float], packet_loss_pct: Optional[float], thresholds: ClassificationThresholds
+    latency_ms: Optional[float],
+    packet_loss_pct: Optional[float],
+    thresholds: ClassificationThresholds,
 ) -> Quality:
     # Caller is responsible for reporting "offline" based on overall
     # reachability; this function only classifies quality when we have an
     # actual latency reading to classify.
     if latency_ms is None or packet_loss_pct is None:
         return "unknown"
-    if latency_ms < thresholds.excellent_latency_ms and packet_loss_pct < thresholds.excellent_packet_loss_pct:
+    if (
+        latency_ms < thresholds.excellent_latency_ms
+        and packet_loss_pct < thresholds.excellent_packet_loss_pct
+    ):
         return "excellent"
-    if latency_ms < thresholds.good_latency_ms and packet_loss_pct < thresholds.good_packet_loss_pct:
+    if (
+        latency_ms < thresholds.good_latency_ms
+        and packet_loss_pct < thresholds.good_packet_loss_pct
+    ):
         return "good"
-    if latency_ms < thresholds.fair_latency_ms or packet_loss_pct < thresholds.fair_packet_loss_pct:
+    if (
+        latency_ms < thresholds.fair_latency_ms
+        or packet_loss_pct < thresholds.fair_packet_loss_pct
+    ):
         return "fair"
     return "poor"
 
@@ -78,25 +90,38 @@ def _jitter_subscore(avg_jitter_ms: Optional[float]) -> Optional[float]:
     return _linear_score(avg_jitter_ms, zero_at=60, hundred_at=5)
 
 
-async def _count_recent_disconnects(conn: aiosqlite.Connection, interface: str, window_start: str) -> int:
+async def _count_recent_disconnects(
+    conn: aiosqlite.Connection, interface: str, window_start: str
+) -> int:
     """Counts transitions *into* a non-connected state, not samples spent
     disconnected - "how many times did it drop" rather than "for how long",
     which is what "disconnects" means as a discrete, countable event."""
-    samples = await wifi_samples_repo.list_samples(conn, interface=interface, start=window_start, limit=10000)
-    samples = list(reversed(samples))  # list_samples is newest-first; need chronological order
+    samples = await wifi_samples_repo.list_samples(
+        conn, interface=interface, start=window_start, limit=10000
+    )
+    samples = list(
+        reversed(samples)
+    )  # list_samples is newest-first; need chronological order
     return sum(
-        1 for prev, curr in zip(samples, samples[1:])
+        1
+        for prev, curr in zip(samples, samples[1:])
         if prev.interface_state == "connected" and curr.interface_state != "connected"
     )
 
 
-async def _count_recent_failed_roams(conn: aiosqlite.Connection, interface: str, window_start: str) -> int:
-    events = await roam_events_repo.list_roam_events(conn, interface=interface, start=window_start, limit=1000)
+async def _count_recent_failed_roams(
+    conn: aiosqlite.Connection, interface: str, window_start: str
+) -> int:
+    events = await roam_events_repo.list_roam_events(
+        conn, interface=interface, start=window_start, limit=1000
+    )
     return sum(1 for e in events if e.success is False)
 
 
 async def compute_wireless_quality_score(
-    conn: aiosqlite.Connection, interface: str, settings: AppSettings,
+    conn: aiosqlite.Connection,
+    interface: str,
+    settings: AppSettings,
 ) -> Optional[int]:
     """
     Returns None only when there is genuinely nothing to compute from yet
@@ -104,14 +129,20 @@ async def compute_wireless_quality_score(
     should read as "no score yet", never a fabricated number.
     """
     now = datetime.now(timezone.utc)
-    window_start = (now - timedelta(minutes=settings.wireless_quality_window_minutes)).isoformat()
+    window_start = (
+        now - timedelta(minutes=settings.wireless_quality_window_minutes)
+    ).isoformat()
     now_iso = now.isoformat()
 
     latest_sample = await wifi_samples_repo.latest_sample(conn, interface)
     rssi = latest_sample.rssi_dbm if latest_sample else None
 
-    latencies = await measurements_repo.latencies_in_range(conn, target_id=None, start=window_start, end=now_iso)
-    agg = await measurements_repo.aggregate_in_range(conn, target_id=None, start=window_start, end=now_iso)
+    latencies = await measurements_repo.latencies_in_range(
+        conn, target_id=None, start=window_start, end=now_iso
+    )
+    agg = await measurements_repo.aggregate_in_range(
+        conn, target_id=None, start=window_start, end=now_iso
+    )
     avg_latency = (sum(latencies) / len(latencies)) if latencies else None
     avg_loss = agg.get("avg_packet_loss")
     avg_jitter = agg.get("avg_jitter")

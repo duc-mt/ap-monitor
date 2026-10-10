@@ -3,6 +3,7 @@ Tests for the Linux WiFi adapter. Every case mocks `asyncio.create_subprocess_ex
 with real captured-shape nmcli/iw output, the same convention test_pinger.py
 uses for `ping` - no real network device or root privileges needed.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +12,9 @@ import pytest
 
 from app.monitoring.wifi.linux import LinuxWifiAdapter
 
-NMCLI_DEVICE_STATUS = "wlan0:wifi:connected\neth0:ethernet:connected\nlo:loopback:unmanaged\n"
+NMCLI_DEVICE_STATUS = (
+    "wlan0:wifi:connected\neth0:ethernet:connected\nlo:loopback:unmanaged\n"
+)
 NMCLI_SHOW_CONNECTED = (
     "GENERAL.STATE:100 (connected)\n"
     "IP4.ADDRESS[1]:192.168.1.42/24\n"
@@ -62,15 +65,34 @@ def _responder(table: dict):
         if cmd not in table:
             raise AssertionError(f"Unexpected command: {cmd}")
         return FakeProc(table[cmd])
+
     return fake_exec
 
 
 HAPPY_PATH_RESPONSES = {
     ("nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device", "status"): NMCLI_DEVICE_STATUS,
-    ("nmcli", "-t", "-f", "GENERAL.STATE,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS",
-     "device", "show", "wlan0"): NMCLI_SHOW_CONNECTED,
-    ("nmcli", "-t", "-f", "active,ssid,bssid,chan,freq,signal",
-     "dev", "wifi", "list", "ifname", "wlan0", "--rescan", "no"): NMCLI_WIFI_LIST,
+    (
+        "nmcli",
+        "-t",
+        "-f",
+        "GENERAL.STATE,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS",
+        "device",
+        "show",
+        "wlan0",
+    ): NMCLI_SHOW_CONNECTED,
+    (
+        "nmcli",
+        "-t",
+        "-f",
+        "active,ssid,bssid,chan,freq,signal",
+        "dev",
+        "wifi",
+        "list",
+        "ifname",
+        "wlan0",
+        "--rescan",
+        "no",
+    ): NMCLI_WIFI_LIST,
     ("iw", "dev", "wlan0", "link"): IW_LINK,
     ("iw", "dev", "wlan0", "survey", "dump"): IW_SURVEY,
 }
@@ -78,7 +100,9 @@ HAPPY_PATH_RESPONSES = {
 
 @pytest.mark.asyncio
 async def test_list_interfaces_filters_to_wifi_devices_only(monkeypatch):
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", _responder(HAPPY_PATH_RESPONSES))
+    monkeypatch.setattr(
+        asyncio, "create_subprocess_exec", _responder(HAPPY_PATH_RESPONSES)
+    )
     interfaces = await LinuxWifiAdapter().list_interfaces()
     assert [i.name for i in interfaces] == ["wlan0"]
     assert interfaces[0].state == "connected"
@@ -87,13 +111,17 @@ async def test_list_interfaces_filters_to_wifi_devices_only(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_active_interface_returns_connected_device(monkeypatch):
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", _responder(HAPPY_PATH_RESPONSES))
+    monkeypatch.setattr(
+        asyncio, "create_subprocess_exec", _responder(HAPPY_PATH_RESPONSES)
+    )
     assert await LinuxWifiAdapter().get_active_interface() == "wlan0"
 
 
 @pytest.mark.asyncio
 async def test_get_metrics_combines_nmcli_and_iw_correctly(monkeypatch):
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", _responder(HAPPY_PATH_RESPONSES))
+    monkeypatch.setattr(
+        asyncio, "create_subprocess_exec", _responder(HAPPY_PATH_RESPONSES)
+    )
     m = await LinuxWifiAdapter().get_metrics("wlan0")
 
     assert m.ssid == "MyHomeWifi"
@@ -123,10 +151,28 @@ async def test_disconnected_interface_reports_none_not_zero(monkeypatch):
     default - a disconnected interface should read as None throughout, not
     as a fabricated 0 dBm / 0% reading."""
     responses = {
-        ("nmcli", "-t", "-f", "GENERAL.STATE,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS",
-         "device", "show", "wlan0"): "GENERAL.STATE:20 (disconnected)\n",
-        ("nmcli", "-t", "-f", "active,ssid,bssid,chan,freq,signal",
-         "dev", "wifi", "list", "ifname", "wlan0", "--rescan", "no"): "",
+        (
+            "nmcli",
+            "-t",
+            "-f",
+            "GENERAL.STATE,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS",
+            "device",
+            "show",
+            "wlan0",
+        ): "GENERAL.STATE:20 (disconnected)\n",
+        (
+            "nmcli",
+            "-t",
+            "-f",
+            "active,ssid,bssid,chan,freq,signal",
+            "dev",
+            "wifi",
+            "list",
+            "ifname",
+            "wlan0",
+            "--rescan",
+            "no",
+        ): "",
         ("iw", "dev", "wlan0", "link"): "Not connected.\n",
         ("iw", "dev", "wlan0", "survey", "dump"): "",
     }
@@ -143,6 +189,7 @@ async def test_disconnected_interface_reports_none_not_zero(monkeypatch):
 async def test_missing_iw_binary_degrades_gracefully(monkeypatch):
     """`iw` missing (FileNotFoundError) should only blank out the fields iw
     alone provides - nmcli-sourced fields must still populate."""
+
     async def fake_exec(*cmd, **kwargs):
         if cmd[0] == "iw":
             raise FileNotFoundError("iw: command not found")
@@ -272,4 +319,6 @@ async def test_get_metrics_never_triggers_a_scan(monkeypatch):
         assert cmd[0] != "system_profiler"
         if cmd[0] == "nmcli" and "wifi" in cmd and "list" in cmd:
             i = cmd.index("--rescan")
-            assert cmd[i + 1] == "no", f"nmcli wifi list must pass --rescan no, got: {cmd}"
+            assert cmd[i + 1] == "no", (
+                f"nmcli wifi list must pass --rescan no, got: {cmd}"
+            )

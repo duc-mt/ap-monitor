@@ -4,6 +4,7 @@ orchestration on top of each adapter's scan_neighbors(): excluding the
 currently-connected network from its own neighbor list, and flagging
 co-channel interference against the live connection.
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -22,7 +23,11 @@ class _FakeAdapter(WifiAdapter):
         self._neighbors = neighbors
 
     async def list_interfaces(self) -> List[WifiInterfaceInfo]:
-        return [WifiInterfaceInfo(name=self._current.interface, state="connected", is_active=True)]
+        return [
+            WifiInterfaceInfo(
+                name=self._current.interface, state="connected", is_active=True
+            )
+        ]
 
     async def get_active_interface(self) -> Optional[str]:
         return self._current.interface
@@ -44,10 +49,17 @@ def _reset_wifi_module():
 
 @pytest.mark.asyncio
 async def test_own_bssid_is_excluded_from_neighbor_list():
-    current = WifiMetrics(timestamp="t", interface="wlan0", interface_state="connected",
-                           bssid="AA:AA:AA:AA:AA:AA", channel=6)
+    current = WifiMetrics(
+        timestamp="t",
+        interface="wlan0",
+        interface_state="connected",
+        bssid="AA:AA:AA:AA:AA:AA",
+        channel=6,
+    )
     neighbors = [
-        NeighborNetwork(ssid="Me", bssid="AA:AA:AA:AA:AA:AA", channel=6),  # this is us, on a Linux-style scan
+        NeighborNetwork(
+            ssid="Me", bssid="AA:AA:AA:AA:AA:AA", channel=6
+        ),  # this is us, on a Linux-style scan
         NeighborNetwork(ssid="Neighbor", bssid="BB:BB:BB:BB:BB:BB", channel=11),
     ]
     wifi._set_adapter_for_testing(_FakeAdapter(current, neighbors))
@@ -59,8 +71,14 @@ async def test_own_bssid_is_excluded_from_neighbor_list():
 
 @pytest.mark.asyncio
 async def test_co_channel_neighbors_are_flagged():
-    current = WifiMetrics(timestamp="t", interface="wlan0", interface_state="connected",
-                           bssid="AA:AA:AA:AA:AA:AA", channel=6, band="2.4GHz")
+    current = WifiMetrics(
+        timestamp="t",
+        interface="wlan0",
+        interface_state="connected",
+        bssid="AA:AA:AA:AA:AA:AA",
+        channel=6,
+        band="2.4GHz",
+    )
     neighbors = [
         NeighborNetwork(ssid="SameChannel", bssid="BB:BB", channel=6),
         NeighborNetwork(ssid="DifferentChannel", bssid="CC:CC", channel=11),
@@ -82,8 +100,13 @@ async def test_unknown_bssid_source_keeps_all_neighbors():
     """On macOS, neighbor BSSIDs are always None (a real platform
     limitation, see NeighborNetwork.bssid) - self-exclusion by BSSID simply
     can't apply there, so nothing should be dropped on that basis."""
-    current = WifiMetrics(timestamp="t", interface="en0", interface_state="connected",
-                           bssid="AA:AA:AA:AA:AA:AA", channel=36)
+    current = WifiMetrics(
+        timestamp="t",
+        interface="en0",
+        interface_state="connected",
+        bssid="AA:AA:AA:AA:AA:AA",
+        channel=36,
+    )
     neighbors = [
         NeighborNetwork(ssid="Neighbor1", bssid=None, channel=36),
         NeighborNetwork(ssid="Neighbor2", bssid=None, channel=44),
@@ -93,7 +116,9 @@ async def test_unknown_bssid_source_keeps_all_neighbors():
     result = await wifi.scan_environment("en0")
 
     assert {n.ssid for n in result.neighbors} == {"Neighbor1", "Neighbor2"}
-    assert next(n for n in result.neighbors if n.ssid == "Neighbor1").is_co_channel is True
+    assert (
+        next(n for n in result.neighbors if n.ssid == "Neighbor1").is_co_channel is True
+    )
 
 
 @pytest.mark.asyncio
@@ -102,9 +127,14 @@ async def test_no_active_interface_raises_runtime_error():
         async def get_active_interface(self) -> Optional[str]:
             return None
 
-    wifi._set_adapter_for_testing(_NoWifiAdapter(
-        WifiMetrics(timestamp="t", interface="wlan0", interface_state="disconnected"), []
-    ))
+    wifi._set_adapter_for_testing(
+        _NoWifiAdapter(
+            WifiMetrics(
+                timestamp="t", interface="wlan0", interface_state="disconnected"
+            ),
+            [],
+        )
+    )
 
     with pytest.raises(RuntimeError):
         await wifi.scan_environment()

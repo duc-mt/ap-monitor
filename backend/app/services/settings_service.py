@@ -23,7 +23,9 @@ async def get_settings(conn: aiosqlite.Connection) -> AppSettings:
 _NESTED_FIELDS = ("notifications", "classification")
 
 
-async def update_settings(conn: aiosqlite.Connection, patch: AppSettingsUpdate) -> AppSettings:
+async def update_settings(
+    conn: aiosqlite.Connection, patch: AppSettingsUpdate
+) -> AppSettings:
     """
     Partial update (PUT is treated as a patch, matching the dashboard's
     "change one setting" UX). Nested objects (notifications, classification)

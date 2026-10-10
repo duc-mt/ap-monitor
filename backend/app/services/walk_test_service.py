@@ -20,6 +20,7 @@ stale relative to the WiFi reading taken in the same row, which is an
 honest tradeoff given the two measurements fundamentally can't share a
 timescale here.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -55,7 +56,9 @@ class _ActiveSession:
 _active: Optional[_ActiveSession] = None
 
 
-async def start_session(conn: aiosqlite.Connection, data: WalkTestCreate) -> WalkTestOut:
+async def start_session(
+    conn: aiosqlite.Connection, data: WalkTestCreate
+) -> WalkTestOut:
     global _active
     if _active is not None:
         raise RuntimeError(
@@ -63,16 +66,31 @@ async def start_session(conn: aiosqlite.Connection, data: WalkTestCreate) -> Wal
         )
 
     result = await walk_tests_repo.create_walk_test(
-        conn, name=data.name, site=data.site, area=data.area,
-        interface=data.interface, target_ids=data.target_ids,
+        conn,
+        name=data.name,
+        site=data.site,
+        area=data.area,
+        interface=data.interface,
+        target_ids=data.target_ids,
     )
 
-    session = _ActiveSession(walk_test_id=result.id, interface=data.interface, target_ids=data.target_ids)
-    session.sample_task = asyncio.create_task(_sample_loop(conn, session), name=f"walk-test-sample-{result.id}")
+    session = _ActiveSession(
+        walk_test_id=result.id, interface=data.interface, target_ids=data.target_ids
+    )
+    session.sample_task = asyncio.create_task(
+        _sample_loop(conn, session), name=f"walk-test-sample-{result.id}"
+    )
     if data.target_ids:
-        session.ping_task = asyncio.create_task(_ping_loop(conn, session), name=f"walk-test-ping-{result.id}")
+        session.ping_task = asyncio.create_task(
+            _ping_loop(conn, session), name=f"walk-test-ping-{result.id}"
+        )
     _active = session
-    logger.info("Walk-test session %s ('%s') started on %s", result.id, data.name, data.interface)
+    logger.info(
+        "Walk-test session %s ('%s') started on %s",
+        result.id,
+        data.name,
+        data.interface,
+    )
     return result
 
 
@@ -84,14 +102,20 @@ async def stop_session(conn: aiosqlite.Connection, walk_test_id: int) -> WalkTes
             raise ValueError(f"No walk-test session with id={walk_test_id}")
         if existing.status == "stopped":
             return existing  # already stopped - idempotent, not an error
-        raise RuntimeError(f"Walk-test session id={walk_test_id} is not the currently active session.")
+        raise RuntimeError(
+            f"Walk-test session id={walk_test_id} is not the currently active session."
+        )
 
     session = _active
     _active = None
     await _cancel_session_tasks(session)
 
     result = await walk_tests_repo.stop_walk_test(conn, walk_test_id)
-    logger.info("Walk-test session %s stopped (%d sample(s))", walk_test_id, result.sample_count if result else 0)
+    logger.info(
+        "Walk-test session %s stopped (%d sample(s))",
+        walk_test_id,
+        result.sample_count if result else 0,
+    )
     return result
 
 
@@ -113,11 +137,15 @@ async def _sample_loop(conn: aiosqlite.Connection, session: _ActiveSession) -> N
                 # return byte-identical readings across several consecutive
                 # 500ms ticks, which would defeat the entire point of dense
                 # walk-test sampling as someone physically moves around.
-                metrics = await wifi.get_wifi_metrics(session.interface, use_cache=False)
+                metrics = await wifi.get_wifi_metrics(
+                    session.interface, use_cache=False
+                )
             except RuntimeError:
                 pass  # no active WiFi association right now - record what we can (nothing WiFi-related)
             except Exception:
-                logger.exception("Walk-test %s: error reading WiFi metrics", session.walk_test_id)
+                logger.exception(
+                    "Walk-test %s: error reading WiFi metrics", session.walk_test_id
+                )
 
             if metrics is not None:
                 # Walking is exactly when roams happen, and this loop sees the
@@ -126,20 +154,35 @@ async def _sample_loop(conn: aiosqlite.Connection, session: _ActiveSession) -> N
                 # machine, same two-consecutive-readings confirmation.
                 try:
                     await roaming_service.evaluate(conn, metrics)
-                except Exception:  # pragma: no cover - never let roam bookkeeping end a recording
-                    logger.exception("Walk-test %s: roam evaluation failed", session.walk_test_id)
+                except (
+                    Exception
+                ):  # pragma: no cover - never let roam bookkeeping end a recording
+                    logger.exception(
+                        "Walk-test %s: roam evaluation failed", session.walk_test_id
+                    )
 
             sample = {"timestamp": datetime.now(timezone.utc).isoformat()}
             if metrics is not None:
-                sample.update({
-                    "interface_state": metrics.interface_state, "ssid": metrics.ssid, "bssid": metrics.bssid,
-                    "frequency_mhz": metrics.frequency_mhz, "channel": metrics.channel, "band": metrics.band,
-                    "rssi_dbm": metrics.rssi_dbm, "signal_pct": metrics.signal_pct,
-                    "noise_floor_dbm": metrics.noise_floor_dbm, "snr_db": metrics.snr_db,
-                    "phy_mode": metrics.phy_mode, "channel_width_mhz": metrics.channel_width_mhz,
-                    "mcs_index": metrics.mcs_index, "tx_bitrate_mbps": metrics.tx_bitrate_mbps,
-                    "rx_bitrate_mbps": metrics.rx_bitrate_mbps, "phy_rate_mbps": metrics.phy_rate_mbps,
-                })
+                sample.update(
+                    {
+                        "interface_state": metrics.interface_state,
+                        "ssid": metrics.ssid,
+                        "bssid": metrics.bssid,
+                        "frequency_mhz": metrics.frequency_mhz,
+                        "channel": metrics.channel,
+                        "band": metrics.band,
+                        "rssi_dbm": metrics.rssi_dbm,
+                        "signal_pct": metrics.signal_pct,
+                        "noise_floor_dbm": metrics.noise_floor_dbm,
+                        "snr_db": metrics.snr_db,
+                        "phy_mode": metrics.phy_mode,
+                        "channel_width_mhz": metrics.channel_width_mhz,
+                        "mcs_index": metrics.mcs_index,
+                        "tx_bitrate_mbps": metrics.tx_bitrate_mbps,
+                        "rx_bitrate_mbps": metrics.rx_bitrate_mbps,
+                        "phy_rate_mbps": metrics.phy_rate_mbps,
+                    }
+                )
             sample["latency_ms"] = session.latest_latency_ms
             sample["packet_loss_pct"] = session.latest_packet_loss_pct
             sample["reachable"] = session.latest_reachable
@@ -165,14 +208,21 @@ async def _ping_loop(conn: aiosqlite.Connection, session: _ActiveSession) -> Non
             settings = await get_settings(conn)
             try:
                 result = await run_check(
-                    host=target.host, protocol=target.protocol, port=target.port,
-                    count=1, timeout=min(1.0, settings.ping_timeout_seconds),
+                    host=target.host,
+                    protocol=target.protocol,
+                    port=target.port,
+                    count=1,
+                    timeout=min(1.0, settings.ping_timeout_seconds),
                 )
                 session.latest_latency_ms = result.avg_latency_ms
                 session.latest_packet_loss_pct = result.loss_pct
                 session.latest_reachable = result.succeeded > 0
             except Exception:
-                logger.exception("Walk-test %s: ping check against %s failed", session.walk_test_id, target.host)
+                logger.exception(
+                    "Walk-test %s: ping check against %s failed",
+                    session.walk_test_id,
+                    target.host,
+                )
             await asyncio.sleep(1.0)
     except asyncio.CancelledError:
         raise

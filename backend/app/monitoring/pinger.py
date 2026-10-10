@@ -18,6 +18,7 @@ Two strategies, matching the brief:
 Both return a PingBatchResult so the rest of the app never needs to know
 which strategy produced a given measurement.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -130,7 +131,9 @@ async def check_icmp(host: str, count: int, timeout: float) -> PingBatchResult:
         if host.startswith("-"):
             # Windows ping has no `--` option terminator, so an option-looking
             # host would be parsed as a flag.
-            return PingBatchResult(method="icmp", attempted=count, succeeded=0, error="invalid host")
+            return PingBatchResult(
+                method="icmp", attempted=count, succeeded=0, error="invalid host"
+            )
         wait_arg = str(max(1, round(timeout * 1000)))  # milliseconds
         args = ["ping", "-n", str(count), "-w", wait_arg, host]
     elif _IS_BSD_PING:
@@ -156,17 +159,25 @@ async def check_icmp(host: str, count: int, timeout: float) -> PingBatchResult:
         raise PingUnavailable("not permitted to spawn 'ping' in this environment")
 
     try:
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=overall_timeout)
+        stdout_bytes, stderr_bytes = await asyncio.wait_for(
+            proc.communicate(), timeout=overall_timeout
+        )
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
-        return PingBatchResult(method="icmp", attempted=count, succeeded=0, error="ping timed out")
+        return PingBatchResult(
+            method="icmp", attempted=count, succeeded=0, error="ping timed out"
+        )
 
     stdout = decode_output(stdout_bytes)
     stderr = decode_output(stderr_bytes)
     combined = stdout + stderr
 
-    if "Operation not permitted" in combined or "SOCK_RAW" in combined and "Permission" in combined:
+    if (
+        "Operation not permitted" in combined
+        or "SOCK_RAW" in combined
+        and "Permission" in combined
+    ):
         mark_icmp_unavailable()
         raise PingUnavailable("ICMP sockets are not permitted in this environment")
 
@@ -192,16 +203,29 @@ async def check_icmp(host: str, count: int, timeout: float) -> PingBatchResult:
     if succeeded == 0:
         error = _classify_failure(combined)
 
-    return PingBatchResult(method="icmp", attempted=attempted, succeeded=succeeded,
-                            latencies=latencies, error=error)
+    return PingBatchResult(
+        method="icmp",
+        attempted=attempted,
+        succeeded=succeeded,
+        latencies=latencies,
+        error=error,
+    )
 
 
 def _classify_failure(combined: str) -> str:
     lowered = combined.lower()
-    if ("unknown host" in lowered or "name or service not known" in lowered
-            or "temporary failure in name resolution" in lowered or "could not find host" in lowered):
+    if (
+        "unknown host" in lowered
+        or "name or service not known" in lowered
+        or "temporary failure in name resolution" in lowered
+        or "could not find host" in lowered
+    ):
         return "DNS resolution failed"
-    if "network is unreachable" in lowered or "net unreachable" in lowered or "general failure" in lowered:
+    if (
+        "network is unreachable" in lowered
+        or "net unreachable" in lowered
+        or "general failure" in lowered
+    ):
         return "network unreachable"
     if "host unreachable" in lowered or "no route to host" in lowered:
         return "host unreachable"
@@ -216,7 +240,9 @@ def _classify_failure(combined: str) -> str:
     return "request timed out"
 
 
-async def check_tcp(host: str, port: int, count: int, timeout: float) -> PingBatchResult:
+async def check_tcp(
+    host: str, port: int, count: int, timeout: float
+) -> PingBatchResult:
     latencies: list[float] = []
     attempted = 0
     last_error: Optional[str] = None
@@ -242,14 +268,19 @@ async def check_tcp(host: str, port: int, count: int, timeout: float) -> PingBat
                     # Bounded wait: a peer that accepts a connection and then
                     # never sends/closes anything must not be able to stall
                     # the monitoring loop indefinitely.
-                    await asyncio.wait_for(writer.wait_closed(), timeout=min(timeout, 2.0))
+                    await asyncio.wait_for(
+                        writer.wait_closed(), timeout=min(timeout, 2.0)
+                    )
                 except (OSError, asyncio.TimeoutError):
                     pass
 
     succeeded = len(latencies)
     return PingBatchResult(
-        method="tcp", attempted=attempted, succeeded=succeeded,
-        latencies=latencies, error=last_error if succeeded == 0 else None,
+        method="tcp",
+        attempted=attempted,
+        succeeded=succeeded,
+        latencies=latencies,
+        error=last_error if succeeded == 0 else None,
     )
 
 
@@ -265,7 +296,9 @@ def _classify_os_error(exc: OSError) -> str:
     return str(exc)[:200]
 
 
-async def run_check(*, host: str, protocol: str, port: Optional[int], count: int, timeout: float) -> PingBatchResult:
+async def run_check(
+    *, host: str, protocol: str, port: Optional[int], count: int, timeout: float
+) -> PingBatchResult:
     """Entry point used by the scheduler: picks ICMP or TCP and falls back
     to TCP automatically if ICMP turns out to be unusable."""
     if protocol == "icmp":

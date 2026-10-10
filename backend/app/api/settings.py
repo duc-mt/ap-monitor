@@ -16,5 +16,7 @@ async def get_settings(db: aiosqlite.Connection = Depends(get_db)):
 
 
 @router.put("", response_model=AppSettings)
-async def update_settings(payload: AppSettingsUpdate, db: aiosqlite.Connection = Depends(get_db)):
+async def update_settings(
+    payload: AppSettingsUpdate, db: aiosqlite.Connection = Depends(get_db)
+):
     return await settings_service.update_settings(db, payload)

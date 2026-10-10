@@ -25,7 +25,9 @@ def _row_to_target(row: aiosqlite.Row) -> TargetOut:
     )
 
 
-async def list_targets(conn: aiosqlite.Connection, *, enabled_only: bool = False) -> list[TargetOut]:
+async def list_targets(
+    conn: aiosqlite.Connection, *, enabled_only: bool = False
+) -> list[TargetOut]:
     query = "SELECT * FROM targets"
     if enabled_only:
         query += " WHERE enabled = 1"
@@ -36,7 +38,9 @@ async def list_targets(conn: aiosqlite.Connection, *, enabled_only: bool = False
 
 
 async def get_target(conn: aiosqlite.Connection, target_id: int) -> Optional[TargetOut]:
-    async with conn.execute("SELECT * FROM targets WHERE id = ?", (target_id,)) as cursor:
+    async with conn.execute(
+        "SELECT * FROM targets WHERE id = ?", (target_id,)
+    ) as cursor:
         row = await cursor.fetchone()
     return _row_to_target(row) if row else None
 
@@ -50,15 +54,23 @@ async def create_target(conn: aiosqlite.Connection, data: TargetCreate) -> Targe
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                data.name, data.host, data.protocol, data.port,
-                int(data.is_gateway), int(data.enabled), data.interval_seconds, created_at,
+                data.name,
+                data.host,
+                data.protocol,
+                data.port,
+                int(data.is_gateway),
+                int(data.enabled),
+                data.interval_seconds,
+                created_at,
             ),
         )
         target_id = cursor.lastrowid
     return await get_target(conn, target_id)  # type: ignore[return-value]
 
 
-async def update_target(conn: aiosqlite.Connection, target_id: int, data: TargetUpdate) -> Optional[TargetOut]:
+async def update_target(
+    conn: aiosqlite.Connection, target_id: int, data: TargetUpdate
+) -> Optional[TargetOut]:
     existing = await get_target(conn, target_id)
     if existing is None:
         return None
@@ -66,10 +78,7 @@ async def update_target(conn: aiosqlite.Connection, target_id: int, data: Target
     if not fields:
         return existing
     set_clause = ", ".join(f"{key} = ?" for key in fields)
-    values = [
-        (int(v) if isinstance(v, bool) else v)
-        for v in fields.values()
-    ]
+    values = [(int(v) if isinstance(v, bool) else v) for v in fields.values()]
     async with write_transaction() as tx:
         await tx.execute(
             f"UPDATE targets SET {set_clause} WHERE id = ?",
@@ -90,10 +99,19 @@ async def seed_default_targets(conn: aiosqlite.Connection) -> None:
     if existing:
         return
     defaults = [
-        TargetCreate(name="Gateway", host=await _detect_gateway(), protocol="icmp",
-                     is_gateway=True, interval_seconds=5),
-        TargetCreate(name="Cloudflare DNS", host="1.1.1.1", protocol="icmp", interval_seconds=5),
-        TargetCreate(name="Google DNS", host="8.8.8.8", protocol="icmp", interval_seconds=5),
+        TargetCreate(
+            name="Gateway",
+            host=await _detect_gateway(),
+            protocol="icmp",
+            is_gateway=True,
+            interval_seconds=5,
+        ),
+        TargetCreate(
+            name="Cloudflare DNS", host="1.1.1.1", protocol="icmp", interval_seconds=5
+        ),
+        TargetCreate(
+            name="Google DNS", host="8.8.8.8", protocol="icmp", interval_seconds=5
+        ),
     ]
     for target in defaults:
         await create_target(conn, target)
@@ -110,12 +128,17 @@ async def _detect_gateway() -> str:
     """
     if sys.platform in ("darwin", "win32"):
         try:
-            lookup = (network_info.get_default_gateway_macos if sys.platform == "darwin"
-                      else network_info.get_default_gateway_windows)
+            lookup = (
+                network_info.get_default_gateway_macos
+                if sys.platform == "darwin"
+                else network_info.get_default_gateway_windows
+            )
             gateway = await lookup()
             if gateway:
                 return gateway
-        except Exception:  # pragma: no cover - defensive: seeding must never crash on this
+        except (
+            Exception
+        ):  # pragma: no cover - defensive: seeding must never crash on this
             pass
         return "192.168.1.1"
 
@@ -125,7 +148,7 @@ async def _detect_gateway() -> str:
                 fields = line.strip().split()
                 if len(fields) >= 3 and fields[1] == "00000000":
                     hex_ip = fields[2]
-                    octets = [str(int(hex_ip[i:i + 2], 16)) for i in (6, 4, 2, 0)]
+                    octets = [str(int(hex_ip[i : i + 2], 16)) for i in (6, 4, 2, 0)]
                     return ".".join(octets)
     except (OSError, ValueError, IndexError):
         pass

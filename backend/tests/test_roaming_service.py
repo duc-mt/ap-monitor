@@ -5,6 +5,7 @@ as input, so these tests just hand it a scripted sequence of readings and
 check the resulting states and recorded roam_events rows against a real
 (temp, per-test) database via the `db` fixture.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -16,8 +17,13 @@ from app.services import roaming_service
 
 def _reading(bssid, *, ssid="HomeNet", state="connected", ipv4=None, rssi=-50):
     return WifiMetrics(
-        timestamp="2026-01-01T00:00:00+00:00", interface="wlan0", interface_state=state,
-        ssid=ssid, bssid=bssid, ipv4_addresses=ipv4, rssi_dbm=rssi,
+        timestamp="2026-01-01T00:00:00+00:00",
+        interface="wlan0",
+        interface_state=state,
+        ssid=ssid,
+        bssid=bssid,
+        ipv4_addresses=ipv4,
+        rssi_dbm=rssi,
     )
 
 
@@ -47,7 +53,9 @@ async def test_bssid_change_held_for_two_ticks_is_confirmed(db):
     assert event.previous_bssid == "AA:AA"
     assert event.new_bssid == "BB:BB"
     assert event.previous_rssi_dbm == -40
-    assert event.new_rssi_dbm == -60  # the *candidate* reading's RSSI, not the confirming tick's
+    assert (
+        event.new_rssi_dbm == -60
+    )  # the *candidate* reading's RSSI, not the confirming tick's
     assert event.ssid == "HomeNet"
     # No probe targets are configured in this fixture, so the interruption
     # watch has nothing to measure: it must say so ("unknown" confidence) and
@@ -81,7 +89,9 @@ async def test_different_ssid_is_a_fresh_connection_not_a_roam(db):
 @pytest.mark.asyncio
 async def test_disconnect_then_reconnect_is_not_a_roam(db):
     await roaming_service.evaluate(db, _reading("AA:AA"))
-    disconnected = await roaming_service.evaluate(db, _reading(None, state="disconnected"))
+    disconnected = await roaming_service.evaluate(
+        db, _reading(None, state="disconnected")
+    )
     reconnected = await roaming_service.evaluate(db, _reading("AA:AA"))
 
     assert disconnected == "disconnected"

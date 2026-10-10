@@ -32,14 +32,18 @@ async def list_samples(
 ):
     """History of periodic WiFi metric polls - for charting RSSI/channel/etc.
     over time. Defaults to every interface if none is given."""
-    return await wifi_samples_repo.list_samples(db, interface=interface, start=start, end=end, limit=limit)
+    return await wifi_samples_repo.list_samples(
+        db, interface=interface, start=start, end=end, limit=limit
+    )
 
 
 @router.get("/analysis", response_model=SignalAnalysis)
 async def wifi_analysis(
     minutes: int = Query(60, ge=1, le=10080, description="Look-back window."),
     interface: Optional[str] = None,
-    weak_threshold_dbm: int = Query(ap_analysis_service.DEFAULT_WEAK_THRESHOLD_DBM, ge=-100, le=-30),
+    weak_threshold_dbm: int = Query(
+        ap_analysis_service.DEFAULT_WEAK_THRESHOLD_DBM, ge=-100, le=-30
+    ),
     max_points: int = Query(ap_analysis_service.DEFAULT_MAX_POINTS, ge=50, le=5000),
     db: aiosqlite.Connection = Depends(get_db),
 ):
@@ -53,12 +57,18 @@ async def wifi_analysis(
     samples: list = []
     if interface is not None:
         start = (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
-        samples = await wifi_samples_repo.list_samples(db, interface=interface, start=start, limit=50000)
-    return ap_analysis_service.analyze(samples, weak_threshold_dbm=weak_threshold_dbm, max_points=max_points)
+        samples = await wifi_samples_repo.list_samples(
+            db, interface=interface, start=start, limit=50000
+        )
+    return ap_analysis_service.analyze(
+        samples, weak_threshold_dbm=weak_threshold_dbm, max_points=max_points
+    )
 
 
 @router.post("/scan", response_model=EnvironmentScanResult)
-async def scan_environment(interface: Optional[str] = None, db: aiosqlite.Connection = Depends(get_db)):
+async def scan_environment(
+    interface: Optional[str] = None, db: aiosqlite.Connection = Depends(get_db)
+):
     """
     The on-demand "Scan Environment" action - never called on a timer
     anywhere in the app. Actively scans for surrounding networks

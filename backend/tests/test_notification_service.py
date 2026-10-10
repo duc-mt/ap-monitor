@@ -25,9 +25,11 @@ async def test_send_on_macos_calls_osascript(monkeypatch):
 
     async def fake_exec(*args, **kwargs):
         calls.append(args)
+
         class P:
             async def wait(self_inner):
                 return 0
+
         return P()
 
     monkeypatch.setattr(ns, "create_subprocess_exec", fake_exec)
@@ -44,9 +46,11 @@ async def test_send_on_linux_calls_notify_send(monkeypatch):
 
     async def fake_exec(*args, **kwargs):
         calls.append(args)
+
         class P:
             async def wait(self_inner):
                 return 0
+
         return P()
 
     monkeypatch.setattr(ns, "create_subprocess_exec", fake_exec)
@@ -76,9 +80,11 @@ async def test_send_respects_cooldown(monkeypatch):
     async def fake_exec(*args, **kwargs):
         nonlocal call_count
         call_count += 1
+
         class P:
             async def wait(self_inner):
                 return 0
+
         return P()
 
     monkeypatch.setattr(ns, "create_subprocess_exec", fake_exec)

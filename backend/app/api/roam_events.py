@@ -20,7 +20,9 @@ async def list_roam_events(
     limit: int = 200,
     db: aiosqlite.Connection = Depends(get_db),
 ):
-    return await roam_events_repo.list_roam_events(db, interface=interface, start=start, end=end, limit=limit)
+    return await roam_events_repo.list_roam_events(
+        db, interface=interface, start=start, end=end, limit=limit
+    )
 
 
 @router.get("/{event_id}", response_model=RoamEventOut)

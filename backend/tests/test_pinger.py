@@ -61,7 +61,9 @@ def test_compute_jitter_is_mean_abs_successive_diff():
 
 
 def test_ping_batch_result_loss_pct_all_success():
-    result = pinger.PingBatchResult(method="icmp", attempted=3, succeeded=3, latencies=[10, 11, 12])
+    result = pinger.PingBatchResult(
+        method="icmp", attempted=3, succeeded=3, latencies=[10, 11, 12]
+    )
     assert result.loss_pct == 0.0
     assert result.success is True
     assert result.avg_latency_ms == 11.0
@@ -207,10 +209,14 @@ async def test_run_check_falls_back_to_tcp_when_icmp_unavailable(monkeypatch):
     server = await asyncio.start_server(_close_immediately, "127.0.0.1", 0)
     port = server.sockets[0].getsockname()[1]
     try:
-        result = await pinger.run_check(host="127.0.0.1", protocol="icmp", port=port, count=2, timeout=1.0)
+        result = await pinger.run_check(
+            host="127.0.0.1", protocol="icmp", port=port, count=2, timeout=1.0
+        )
         assert result.method == "tcp"
         assert result.succeeded == 2
-        assert result.error is None  # successful fallback shouldn't be flagged as an error
+        assert (
+            result.error is None
+        )  # successful fallback shouldn't be flagged as an error
     finally:
         server.close()
         await server.wait_closed()
@@ -294,7 +300,11 @@ async def test_windows_timeout_is_classified(monkeypatch):
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     result = await pinger.check_icmp("10.9.9.9", count=2, timeout=1.0)
-    assert (result.attempted, result.succeeded, result.error) == (2, 0, "request timed out")
+    assert (result.attempted, result.succeeded, result.error) == (
+        2,
+        0,
+        "request timed out",
+    )
 
 
 @pytest.mark.asyncio

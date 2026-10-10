@@ -22,17 +22,43 @@ async def export_measurements_csv(
     end: Optional[str] = None,
     db: aiosqlite.Connection = Depends(get_db),
 ):
-    rows = await measurements_repo.list_measurements(db, target_id=target_id, start=start, end=end, limit=100000)
+    rows = await measurements_repo.list_measurements(
+        db, target_id=target_id, start=start, end=end, limit=100000
+    )
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["timestamp", "target_id", "target_name", "latency_ms", "packet_loss", "jitter_ms", "success", "error"])
+    writer.writerow(
+        [
+            "timestamp",
+            "target_id",
+            "target_name",
+            "latency_ms",
+            "packet_loss",
+            "jitter_ms",
+            "success",
+            "error",
+        ]
+    )
     for r in rows:
-        writer.writerow([r.timestamp, r.target_id, r.target_name, r.latency_ms, r.packet_loss, r.jitter_ms, r.success, r.error or ""])
+        writer.writerow(
+            [
+                r.timestamp,
+                r.target_id,
+                r.target_name,
+                r.latency_ms,
+                r.packet_loss,
+                r.jitter_ms,
+                r.success,
+                r.error or "",
+            ]
+        )
     buffer.seek(0)
     return StreamingResponse(
         iter([buffer.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=ap-monitor-measurements.csv"},
+        headers={
+            "Content-Disposition": "attachment; filename=ap-monitor-measurements.csv"
+        },
     )
 
 
@@ -45,13 +71,18 @@ async def export_report_json(
     db: aiosqlite.Connection = Depends(get_db),
 ):
     stats = await statistics_service.compute_statistics(
-        db, range_name=range, start=start, end=end, target_id=target_id  # type: ignore[arg-type]
+        db,
+        range_name=range,
+        start=start,
+        end=end,
+        target_id=target_id,  # type: ignore[arg-type]
     )
     report = {
         "statistics": stats.model_dump(),
     }
     buffer = io.StringIO()
     import json
+
     json.dump(report, buffer, indent=2)
     buffer.seek(0)
     return StreamingResponse(

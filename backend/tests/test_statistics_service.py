@@ -36,7 +36,9 @@ def test_resolve_range_custom_requires_bounds():
 def test_resolve_range_custom_rejects_backwards_range():
     now = datetime.now(timezone.utc)
     with pytest.raises(ValueError):
-        statistics_service.resolve_range("custom", now.isoformat(), (now - timedelta(hours=1)).isoformat())
+        statistics_service.resolve_range(
+            "custom", now.isoformat(), (now - timedelta(hours=1)).isoformat()
+        )
 
 
 def test_resolve_range_unknown_name():
@@ -46,30 +48,44 @@ def test_resolve_range_unknown_name():
 
 @pytest.mark.asyncio
 async def test_compute_statistics_end_to_end(db):
-    target = await targets_repo.create_target(db, TargetCreate(name="Test", host="1.1.1.1", protocol="icmp"))
+    target = await targets_repo.create_target(
+        db, TargetCreate(name="Test", host="1.1.1.1", protocol="icmp")
+    )
     now = datetime.now(timezone.utc)
 
     samples = [10.0, 20.0, 30.0, 40.0, 50.0]
     for i, latency in enumerate(samples):
-        await insert_measurement(db, MeasurementCreate(
-            target_id=target.id,
-            timestamp=(now - timedelta(minutes=len(samples) - i)).isoformat(),
-            latency_ms=latency,
-            packet_loss=0.0,
-            jitter_ms=1.0,
-            success=True,
-        ))
+        await insert_measurement(
+            db,
+            MeasurementCreate(
+                target_id=target.id,
+                timestamp=(now - timedelta(minutes=len(samples) - i)).isoformat(),
+                latency_ms=latency,
+                packet_loss=0.0,
+                jitter_ms=1.0,
+                success=True,
+            ),
+        )
     # one failed check
-    await insert_measurement(db, MeasurementCreate(
-        target_id=target.id, timestamp=now.isoformat(),
-        latency_ms=None, packet_loss=100.0, jitter_ms=None, success=False, error="timeout",
-    ))
+    await insert_measurement(
+        db,
+        MeasurementCreate(
+            target_id=target.id,
+            timestamp=now.isoformat(),
+            latency_ms=None,
+            packet_loss=100.0,
+            jitter_ms=None,
+            success=False,
+            error="timeout",
+        ),
+    )
 
-    stats = await statistics_service.compute_statistics(db, range_name="1h", target_id=target.id)
+    stats = await statistics_service.compute_statistics(
+        db, range_name="1h", target_id=target.id
+    )
     assert stats.sample_count == 6
     assert stats.min_latency_ms == 10.0
     assert stats.max_latency_ms == 50.0
     assert stats.median_latency_ms == 30.0
     assert stats.avg_latency_ms == 30.0
     assert stats.packet_loss_pct == pytest.approx(100 / 6, rel=0.01)
-

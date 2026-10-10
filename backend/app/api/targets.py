@@ -17,7 +17,9 @@ async def list_targets(db: aiosqlite.Connection = Depends(get_db)):
 
 
 @router.post("", response_model=TargetOut, status_code=201)
-async def create_target(payload: TargetCreate, db: aiosqlite.Connection = Depends(get_db)):
+async def create_target(
+    payload: TargetCreate, db: aiosqlite.Connection = Depends(get_db)
+):
     target = await targets_repo.create_target(db, payload)
     await manager.reload_target(db, target.id)
     return target
@@ -32,7 +34,9 @@ async def get_target(target_id: int, db: aiosqlite.Connection = Depends(get_db))
 
 
 @router.put("/{target_id}", response_model=TargetOut)
-async def update_target(target_id: int, payload: TargetUpdate, db: aiosqlite.Connection = Depends(get_db)):
+async def update_target(
+    target_id: int, payload: TargetUpdate, db: aiosqlite.Connection = Depends(get_db)
+):
     target = await targets_repo.update_target(db, target_id, payload)
     if target is None:
         raise HTTPException(status_code=404, detail="Target not found")

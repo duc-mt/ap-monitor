@@ -12,8 +12,17 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import (
-    export, health, measurements, monitoring, roam_events, settings, statistics, status, targets,
-    walk_tests as walk_tests_api, wifi as wifi_api,
+    export,
+    health,
+    measurements,
+    monitoring,
+    roam_events,
+    settings,
+    statistics,
+    status,
+    targets,
+    walk_tests as walk_tests_api,
+    wifi as wifi_api,
 )
 from app.config import DEV_CORS_ORIGINS, FRONTEND_DIST_DIR
 from app.database.connection import close_db, init_db
@@ -38,7 +47,9 @@ async def lifespan(app: FastAPI):
     conn = await init_db()
     await seed_default_targets(conn)
     if not notifier_available():
-        logger.info("No desktop notification tool found - notifications will be logged only")
+        logger.info(
+            "No desktop notification tool found - notifications will be logged only"
+        )
     if AUTOSTART:
         await manager.start(conn)
     yield
@@ -63,11 +74,20 @@ app.add_middleware(
 )
 
 for router in (
-    health.router, status.router, targets.router, measurements.router,
-    statistics.router, settings.router, monitoring.router, export.router, wifi_api.router,
-    walk_tests_api.router, roam_events.router,
+    health.router,
+    status.router,
+    targets.router,
+    measurements.router,
+    statistics.router,
+    settings.router,
+    monitoring.router,
+    export.router,
+    wifi_api.router,
+    walk_tests_api.router,
+    roam_events.router,
 ):
     app.include_router(router)
+
 
 def safe_static_file(root: Path, requested: str) -> Optional[Path]:
     """The file under `root` that `requested` names, or None. Resolves the
@@ -96,6 +116,7 @@ if FRONTEND_DIST_DIR.is_dir():
         # hand the single-page app its entry point so deep links and refreshes work.
         return FileResponse(FRONTEND_DIST_DIR / "index.html")
 else:
+
     @app.get("/", include_in_schema=False)
     async def frontend_not_built():
         return {

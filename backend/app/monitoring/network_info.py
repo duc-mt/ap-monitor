@@ -8,6 +8,7 @@ Gateway lookups per platform: Linux reads /proc/net/route directly (see
 app/database/targets_repo.py), macOS uses `route -n get default`, and Windows
 uses `route print -4`.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +23,10 @@ _SUBPROCESS_TIMEOUT = 3.0
 async def _run(*args: str, timeout: float = _SUBPROCESS_TIMEOUT) -> str:
     try:
         proc = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL, **NO_WINDOW,
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+            **NO_WINDOW,
         )
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         return decode_output(stdout)

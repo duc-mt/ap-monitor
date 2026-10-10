@@ -2,6 +2,7 @@
 Models for a confirmed roam event (see app.services.roaming_service) and
 the roaming state machine's state vocabulary.
 """
+
 from __future__ import annotations
 
 from typing import List, Literal, Optional
@@ -16,8 +17,8 @@ RoamingState = Literal[
     "connecting",
     "connected",
     "roam_candidate",  # a new BSSID was just seen once - not yet confirmed, could be a flicker
-    "roaming",         # the same new BSSID held for a second reading - confirmed, event just recorded
-    "stabilizing",      # one more matching tick before calling it fully settled
+    "roaming",  # the same new BSSID held for a second reading - confirmed, event just recorded
+    "stabilizing",  # one more matching tick before calling it fully settled
 ]
 
 RoamClassification = Literal["excellent", "good", "fair", "poor", "failed"]

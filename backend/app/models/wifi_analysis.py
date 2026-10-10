@@ -5,6 +5,7 @@ the Walk Test results page are built from. One shape serves both because a
 walk-test session and a window of the always-on WiFi poll are the same kind
 of data: a time-ordered series of WiFi readings.
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -13,7 +14,7 @@ from pydantic import BaseModel
 
 
 class SignalPoint(BaseModel):
-    t: str                       # ISO timestamp
+    t: str  # ISO timestamp
     rssi: Optional[int] = None
     snr: Optional[int] = None
     bssid: Optional[str] = None
@@ -24,6 +25,7 @@ class SignalPoint(BaseModel):
 
 class ApSegment(BaseModel):
     """One unbroken stretch on a single access point."""
+
     bssid: Optional[str] = None
     ssid: Optional[str] = None
     band: Optional[str] = None
@@ -39,6 +41,7 @@ class ApSegment(BaseModel):
 
 class ApUsage(BaseModel):
     """A per-AP rollup of every segment on that BSSID."""
+
     bssid: Optional[str] = None
     ssid: Optional[str] = None
     band: Optional[str] = None
@@ -46,7 +49,7 @@ class ApUsage(BaseModel):
     visits: int
     total_seconds: float
     sample_count: int
-    share_pct: float             # share of connected samples
+    share_pct: float  # share of connected samples
     rssi_min: Optional[int] = None
     rssi_avg: Optional[float] = None
     rssi_max: Optional[int] = None
@@ -54,12 +57,13 @@ class ApUsage(BaseModel):
 
 class ApChange(BaseModel):
     """A switch from one BSSID to another between adjacent segments."""
+
     timestamp: str
     ssid: Optional[str] = None
     from_bssid: str
     to_bssid: str
     same_ssid: bool
-    via_disconnect: bool         # a disconnected gap sat between the two APs
+    via_disconnect: bool  # a disconnected gap sat between the two APs
     rssi_before: Optional[int] = None
     rssi_after: Optional[int] = None
 

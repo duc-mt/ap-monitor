@@ -15,9 +15,16 @@ def test_default_targets_seeded_on_startup(client):
 
 
 def test_create_list_update_delete_target(client):
-    create_resp = client.post("/api/targets", json={
-        "name": "Custom Host", "host": "example.com", "protocol": "tcp", "port": 443, "interval_seconds": 10,
-    })
+    create_resp = client.post(
+        "/api/targets",
+        json={
+            "name": "Custom Host",
+            "host": "example.com",
+            "protocol": "tcp",
+            "port": 443,
+            "interval_seconds": 10,
+        },
+    )
     assert create_resp.status_code == 201
     target = create_resp.json()
     assert target["name"] == "Custom Host"
@@ -25,7 +32,9 @@ def test_create_list_update_delete_target(client):
     get_resp = client.get(f"/api/targets/{target['id']}")
     assert get_resp.status_code == 200
 
-    update_resp = client.put(f"/api/targets/{target['id']}", json={"interval_seconds": 20})
+    update_resp = client.put(
+        f"/api/targets/{target['id']}", json={"interval_seconds": 20}
+    )
     assert update_resp.status_code == 200
     assert update_resp.json()["interval_seconds"] == 20
 
@@ -37,12 +46,16 @@ def test_create_list_update_delete_target(client):
 
 
 def test_create_target_rejects_invalid_host(client):
-    resp = client.post("/api/targets", json={"name": "Bad", "host": "not a host!!", "protocol": "icmp"})
+    resp = client.post(
+        "/api/targets", json={"name": "Bad", "host": "not a host!!", "protocol": "icmp"}
+    )
     assert resp.status_code == 422
 
 
 def test_create_target_rejects_bad_interval(client):
-    resp = client.post("/api/targets", json={"name": "Fast", "host": "1.1.1.1", "interval_seconds": 0})
+    resp = client.post(
+        "/api/targets", json={"name": "Fast", "host": "1.1.1.1", "interval_seconds": 0}
+    )
     assert resp.status_code == 422
 
 
@@ -61,9 +74,21 @@ def test_status_endpoint_shape(client):
     assert resp.status_code == 200
     body = resp.json()
     for key in (
-        "online", "quality", "targets_reachable", "targets_total", "targets", "monitoring_running",
-        "wifi_interface", "ssid", "bssid", "rssi_dbm", "channel", "band", "phy_mode",
-        "connectivity", "wireless_quality_score",
+        "online",
+        "quality",
+        "targets_reachable",
+        "targets_total",
+        "targets",
+        "monitoring_running",
+        "wifi_interface",
+        "ssid",
+        "bssid",
+        "rssi_dbm",
+        "channel",
+        "band",
+        "phy_mode",
+        "connectivity",
+        "wireless_quality_score",
     ):
         assert key in body
     for key in ("wifi_connected", "gateway_reachable", "internet_state", "overall"):

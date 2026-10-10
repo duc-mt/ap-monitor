@@ -22,6 +22,7 @@ wants to know the instant they lose or regain connectivity. Threshold
 alerts (latency/packet-loss) are debounced per (kind, target) key so a
 flapping metric doesn't spam five notifications a minute.
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,11 +42,15 @@ _last_sent: dict[str, float] = {}
 _IS_MACOS = sys.platform == "darwin"
 _IS_WINDOWS = sys.platform == "win32"
 
-_BACKEND_BINARY = "osascript" if _IS_MACOS else ("powershell" if _IS_WINDOWS else "notify-send")
+_BACKEND_BINARY = (
+    "osascript" if _IS_MACOS else ("powershell" if _IS_WINDOWS else "notify-send")
+)
 
 # Shown as the sender; PowerShell's own AppUserModelID is used because an
 # unregistered one makes Windows silently drop the toast.
-_POWERSHELL_APP_ID = r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe"
+_POWERSHELL_APP_ID = (
+    r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe"
+)
 _TOAST_SCRIPT = (
     "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null;"
     "$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent("
@@ -72,8 +77,14 @@ def _applescript_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
-async def send(title: str, message: str, *, urgency: str = "normal", key: str | None = None,
-                cooldown_seconds: int = 0) -> None:
+async def send(
+    title: str,
+    message: str,
+    *,
+    urgency: str = "normal",
+    key: str | None = None,
+    cooldown_seconds: int = 0,
+) -> None:
     if key is not None and cooldown_seconds > 0:
         last = _last_sent.get(key)
         now = time.monotonic()
@@ -82,7 +93,12 @@ async def send(title: str, message: str, *, urgency: str = "normal", key: str | 
         _last_sent[key] = now
 
     if not notifier_available():
-        logger.info("[notification suppressed - %s not found] %s: %s", _BACKEND_BINARY, title, message)
+        logger.info(
+            "[notification suppressed - %s not found] %s: %s",
+            _BACKEND_BINARY,
+            title,
+            message,
+        )
         return
 
     try:
@@ -92,20 +108,40 @@ async def send(title: str, message: str, *, urgency: str = "normal", key: str | 
                 f'with title "{_applescript_escape(title)}"'
             )
             proc = await create_subprocess_exec(
-                "osascript", "-e", script, stdout=DEVNULL, stderr=DEVNULL,
+                "osascript",
+                "-e",
+                script,
+                stdout=DEVNULL,
+                stderr=DEVNULL,
             )
         elif _IS_WINDOWS:
-            env = {**os.environ, "AP_MONITOR_TOAST_TITLE": title, "AP_MONITOR_TOAST_BODY": message}
+            env = {
+                **os.environ,
+                "AP_MONITOR_TOAST_TITLE": title,
+                "AP_MONITOR_TOAST_BODY": message,
+            }
             proc = await create_subprocess_exec(
-                "powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
-                "-Command", _TOAST_SCRIPT,
-                stdout=DEVNULL, stderr=DEVNULL, env=env, **NO_WINDOW,
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-WindowStyle",
+                "Hidden",
+                "-Command",
+                _TOAST_SCRIPT,
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+                env=env,
+                **NO_WINDOW,
             )
         else:
             proc = await create_subprocess_exec(
-                "notify-send", "--app-name=AP Monitor", f"--urgency={urgency}",
-                title, message,
-                stdout=DEVNULL, stderr=DEVNULL,
+                "notify-send",
+                "--app-name=AP Monitor",
+                f"--urgency={urgency}",
+                title,
+                message,
+                stdout=DEVNULL,
+                stderr=DEVNULL,
             )
         await proc.wait()
     except OSError as exc:

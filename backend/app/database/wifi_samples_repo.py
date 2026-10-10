@@ -10,11 +10,28 @@ from app.database.connection import write_transaction
 from app.monitoring.wifi.models import WifiMetrics
 
 _COLUMNS = (
-    "timestamp", "interface", "interface_state", "ssid", "bssid",
-    "frequency_mhz", "channel", "band", "rssi_dbm", "signal_pct",
-    "noise_floor_dbm", "snr_db", "phy_mode", "channel_width_mhz", "mcs_index",
-    "tx_bitrate_mbps", "rx_bitrate_mbps", "phy_rate_mbps",
-    "ipv4_addresses", "ipv6_addresses", "gateway", "dns_servers",
+    "timestamp",
+    "interface",
+    "interface_state",
+    "ssid",
+    "bssid",
+    "frequency_mhz",
+    "channel",
+    "band",
+    "rssi_dbm",
+    "signal_pct",
+    "noise_floor_dbm",
+    "snr_db",
+    "phy_mode",
+    "channel_width_mhz",
+    "mcs_index",
+    "tx_bitrate_mbps",
+    "rx_bitrate_mbps",
+    "phy_rate_mbps",
+    "ipv4_addresses",
+    "ipv6_addresses",
+    "gateway",
+    "dns_servers",
 )
 
 
@@ -23,13 +40,24 @@ def _row_to_metrics(row: aiosqlite.Row) -> WifiMetrics:
         return json.loads(value) if value is not None else None
 
     return WifiMetrics(
-        timestamp=row["timestamp"], interface=row["interface"], interface_state=row["interface_state"],
-        ssid=row["ssid"], bssid=row["bssid"],
-        frequency_mhz=row["frequency_mhz"], channel=row["channel"], band=row["band"],
-        rssi_dbm=row["rssi_dbm"], signal_pct=row["signal_pct"],
-        noise_floor_dbm=row["noise_floor_dbm"], snr_db=row["snr_db"],
-        phy_mode=row["phy_mode"], channel_width_mhz=row["channel_width_mhz"], mcs_index=row["mcs_index"],
-        tx_bitrate_mbps=row["tx_bitrate_mbps"], rx_bitrate_mbps=row["rx_bitrate_mbps"], phy_rate_mbps=row["phy_rate_mbps"],
+        timestamp=row["timestamp"],
+        interface=row["interface"],
+        interface_state=row["interface_state"],
+        ssid=row["ssid"],
+        bssid=row["bssid"],
+        frequency_mhz=row["frequency_mhz"],
+        channel=row["channel"],
+        band=row["band"],
+        rssi_dbm=row["rssi_dbm"],
+        signal_pct=row["signal_pct"],
+        noise_floor_dbm=row["noise_floor_dbm"],
+        snr_db=row["snr_db"],
+        phy_mode=row["phy_mode"],
+        channel_width_mhz=row["channel_width_mhz"],
+        mcs_index=row["mcs_index"],
+        tx_bitrate_mbps=row["tx_bitrate_mbps"],
+        rx_bitrate_mbps=row["rx_bitrate_mbps"],
+        phy_rate_mbps=row["phy_rate_mbps"],
         ipv4_addresses=_json_or_none(row["ipv4_addresses"]),
         ipv6_addresses=_json_or_none(row["ipv6_addresses"]),
         gateway=row["gateway"],
@@ -39,10 +67,24 @@ def _row_to_metrics(row: aiosqlite.Row) -> WifiMetrics:
 
 async def insert_sample(conn: aiosqlite.Connection, m: WifiMetrics) -> int:
     values = (
-        m.timestamp, m.interface, m.interface_state, m.ssid, m.bssid,
-        m.frequency_mhz, m.channel, m.band, m.rssi_dbm, m.signal_pct,
-        m.noise_floor_dbm, m.snr_db, m.phy_mode, m.channel_width_mhz, m.mcs_index,
-        m.tx_bitrate_mbps, m.rx_bitrate_mbps, m.phy_rate_mbps,
+        m.timestamp,
+        m.interface,
+        m.interface_state,
+        m.ssid,
+        m.bssid,
+        m.frequency_mhz,
+        m.channel,
+        m.band,
+        m.rssi_dbm,
+        m.signal_pct,
+        m.noise_floor_dbm,
+        m.snr_db,
+        m.phy_mode,
+        m.channel_width_mhz,
+        m.mcs_index,
+        m.tx_bitrate_mbps,
+        m.rx_bitrate_mbps,
+        m.phy_rate_mbps,
         json.dumps(m.ipv4_addresses) if m.ipv4_addresses is not None else None,
         json.dumps(m.ipv6_addresses) if m.ipv6_addresses is not None else None,
         m.gateway,
@@ -57,7 +99,9 @@ async def insert_sample(conn: aiosqlite.Connection, m: WifiMetrics) -> int:
     return cursor.lastrowid
 
 
-async def latest_sample(conn: aiosqlite.Connection, interface: str) -> Optional[WifiMetrics]:
+async def latest_sample(
+    conn: aiosqlite.Connection, interface: str
+) -> Optional[WifiMetrics]:
     async with conn.execute(
         "SELECT * FROM wifi_samples WHERE interface = ? ORDER BY timestamp DESC LIMIT 1",
         (interface,),
@@ -95,5 +139,7 @@ async def list_samples(
 async def delete_older_than(conn: aiosqlite.Connection, retention_days: int) -> int:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
     async with write_transaction() as tx:
-        cursor = await tx.execute("DELETE FROM wifi_samples WHERE timestamp < ?", (cutoff,))
+        cursor = await tx.execute(
+            "DELETE FROM wifi_samples WHERE timestamp < ?", (cutoff,)
+        )
     return cursor.rowcount
