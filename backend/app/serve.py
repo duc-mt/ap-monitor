@@ -1,17 +1,17 @@
+# -*- coding: utf-8 -*-
 """
+==============================================================================
+Module Name:   serve.py
+Description:   Console-less service entry point for AP Monitor backend.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+
 Console-less entry point: `python -m app.serve` (or `pythonw -m app.serve`).
-
-Why this exists instead of `python -m uvicorn app.main:app`: on Windows the
-autostart task runs under pythonw.exe so no console window appears, and
-pythonw has no stdout/stderr (both are None). uvicorn's logging calls
-`.isatty()` on them during startup and crashes. Giving the process a log file
-to write to first avoids that, and gives a service that has no terminal a log
-to read. When a real console is attached nothing here changes anything.
-
-Host, port and data directory come from the same environment variables as
-every other way of starting the app (AP_MONITOR_HOST / _PORT / _DATA_DIR).
+Provides logging redirect for Windows pythonw.exe execution.
 """
-
 from __future__ import annotations
 
 import sys

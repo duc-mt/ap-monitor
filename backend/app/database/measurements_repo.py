@@ -9,16 +9,17 @@ from app.models.measurement import MeasurementCreate, MeasurementOut
 
 
 def _row_to_measurement(row: aiosqlite.Row) -> MeasurementOut:
+    d = dict(row)
     return MeasurementOut(
-        id=row["id"],
-        target_id=row["target_id"],
-        target_name=row.get("name", None),
-        timestamp=row["timestamp"],
-        latency_ms=row["latency_ms"],
-        packet_loss=row["packet_loss"],
-        jitter_ms=row["jitter_ms"],
-        success=bool(row["success"]),
-        error=row["error"],
+        id=d["id"],
+        target_id=d["target_id"],
+        target_name=d.get("name"),
+        timestamp=d["timestamp"],
+        latency_ms=d["latency_ms"],
+        packet_loss=d["packet_loss"],
+        jitter_ms=d["jitter_ms"],
+        success=bool(d["success"]),
+        error=d["error"],
     )
 
 

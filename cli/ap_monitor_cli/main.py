@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
 """
-ap-monitor: command-line interface.
+==============================================================================
+Module Name:   main.py
+Description:   Command-line interface client for AP Monitor.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
 
-This is a thin client over the local REST API (default
-http://127.0.0.1:8766/api) - it never touches the database or performs
-pings itself, so `ap-monitor status` always reflects exactly what the
-dashboard would show.
+Command-line interface thin client calling the local REST API.
 """
-
 from __future__ import annotations
 
 import json as jsonlib

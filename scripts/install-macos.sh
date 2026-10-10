@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Install AP Monitor for the current macOS user via a LaunchAgent - see
-# packaging/launchd/com.ap-monitor.agent.plist for why this is a per-user
-# LaunchAgent rather than a system-wide LaunchDaemon.
-#
-# Deliberately requires NO sudo/root at any point: everything lives under
-# ~/Library/Application Support/ap-monitor, matching the LaunchAgent's own
-# per-user model. Contrast with scripts/install.sh (Linux), which needs
-# root for useradd/systemd/CAP_NET_RAW.
-#
-# Usage: ./scripts/install-macos.sh [--enable]
-#   --enable   also load the LaunchAgent immediately (launchctl load).
+# ==============================================================================
+# Script Name:   install-macos.sh
+# Description:   Install AP Monitor for current macOS user via LaunchAgent.
+# Author:        Mai Tan Duc <ducmai.network@gmail.com>
+# Created:       2026-10-10
+# Version:       1.0.0
+# License:       MIT
+# ==============================================================================
+# Usage:         ./scripts/install-macos.sh [--enable]
+# Notes:         No sudo required; installs under ~/Library/Application Support.
+# ==============================================================================
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then

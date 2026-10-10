@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Uninstall AP Monitor's macOS LaunchAgent install (see install-macos.sh).
-#
-# Usage: ./scripts/uninstall-macos.sh [--purge]
-#   --purge   also delete the data directory (all measurement history and
-#             settings). Without this flag, data is left in place in case
-#             you reinstall later.
+# ==============================================================================
+# Script Name:   uninstall-macos.sh
+# Description:   Uninstall AP Monitor LaunchAgent on macOS.
+# Author:        Mai Tan Duc <ducmai.network@gmail.com>
+# Created:       2026-10-10
+# Version:       1.0.0
+# License:       MIT
+# ==============================================================================
+# Usage:         ./scripts/uninstall-macos.sh [--purge]
+# Notes:         --purge removes stored history and configuration.
+# ==============================================================================
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then

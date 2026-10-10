@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
-# Install AP Monitor from a source checkout. Works on any
-# systemd-based Linux distribution.
-#
-# Usage: sudo ./scripts/install.sh [--enable]
-#   --enable   also enable and start the systemd service immediately.
+# ==============================================================================
+# Script Name:   install.sh
+# Description:   Install AP Monitor systemd service on Linux.
+# Author:        Mai Tan Duc <ducmai.network@gmail.com>
+# Created:       2026-10-10
+# Version:       1.0.0
+# License:       MIT
+# ==============================================================================
+# Usage:         sudo ./scripts/install.sh [--enable]
+# Notes:         Requires root privileges and systemd-based Linux distro.
+# ==============================================================================
 set -euo pipefail
 
 if [[ $EUID -ne 0 ]]; then

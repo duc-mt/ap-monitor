@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Uninstall AP Monitor (the manual/source install, see install.sh).
-#
-# Usage: sudo ./scripts/uninstall.sh [--purge]
-#   --purge   also delete /var/lib/ap-monitor (all measurement history
-#             and settings). Without this flag, data is left in place in
-#             case you reinstall later.
+# ==============================================================================
+# Script Name:   uninstall.sh
+# Description:   Uninstall AP Monitor systemd service on Linux.
+# Author:        Mai Tan Duc <ducmai.network@gmail.com>
+# Created:       2026-10-10
+# Version:       1.0.0
+# License:       MIT
+# ==============================================================================
+# Usage:         sudo ./scripts/uninstall.sh [--purge]
+# Notes:         --purge removes stored history and configuration.
+# ==============================================================================
 set -euo pipefail
 
 if [[ $EUID -ne 0 ]]; then

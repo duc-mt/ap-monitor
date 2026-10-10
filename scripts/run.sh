@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Run AP Monitor straight from a source checkout on macOS or Linux.
-# No root, no service install: sets up a private virtualenv, builds the
-# dashboard if needed, starts the backend and opens it in your browser.
-#
-# Usage: ./scripts/run.sh [--no-open]
-# Env:   AP_MONITOR_HOST (default 127.0.0.1)  AP_MONITOR_PORT (default 8766)
-#        PYTHON (interpreter to create the venv with, default python3)
+# ==============================================================================
+# Script Name:   run.sh
+# Description:   Run AP Monitor straight from a source checkout on macOS or Linux.
+# Author:        Mai Tan Duc <ducmai.network@gmail.com>
+# Created:       2026-10-10
+# Version:       1.0.0
+# License:       MIT
+# ==============================================================================
+# Usage:         ./scripts/run.sh [--no-open]
+# Notes:         Python 3.10+ required; virtualenv created automatically.
+# ==============================================================================
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
