@@ -1,14 +1,15 @@
 <#
-.SYNOPSIS
-  Install AP Monitor for the current Windows user and start it at every logon.
-.DESCRIPTION
-  Needs NO administrator rights. Everything lives under
-  %LOCALAPPDATA%\ap-monitor, and the backend runs as a per-user Scheduled Task
-  rather than a Windows service on purpose: reading WiFi details with `netsh
-  wlan` works from the signed-in user's session (and is subject to that user's
-  Location privacy setting), which a service in session 0 cannot do.
-.PARAMETER Start
-  Also start AP Monitor right now instead of waiting for the next logon.
+==============================================================================
+Script Name:   install-windows.ps1
+Description:   Install AP Monitor for current Windows user & Scheduled Task.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         .\scripts\install-windows.ps1 [-Start]
+Notes:         Installs to %LOCALAPPDATA%\ap-monitor. No admin required.
+==============================================================================
 #>
 param([switch]$Start)
 $ErrorActionPreference = "Stop"

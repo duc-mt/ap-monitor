@@ -1,8 +1,15 @@
 <#
-.SYNOPSIS
-  Remove the AP Monitor scheduled task and installed files.
-.PARAMETER RemoveData
-  Also delete the database and logs (kept by default).
+==============================================================================
+Script Name:   uninstall-windows.ps1
+Description:   Uninstall AP Monitor Scheduled Task and installed files on Windows.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         .\scripts\uninstall-windows.ps1 [-RemoveData]
+Notes:         -RemoveData also deletes database and logs.
+==============================================================================
 #>
 param([switch]$RemoveData)
 $ErrorActionPreference = "Stop"
