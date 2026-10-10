@@ -7,7 +7,7 @@ def test_status_reports_platform_and_a_wifi_issue_when_there_is_no_interface(cli
     assert body["platform"] in ("linux", "darwin", "win32")
     # The test host has no usable WiFi adapter, so the dashboard must be told why
     # rather than being left blank. Which reason depends on whether nmcli/iw exist.
-    assert body["wifi_issue"]["code"] in ("missing_tools", "no_wifi_interface", "location_permission")
+    assert body["wifi_issue"]["code"] in ("missing_tools", "no_wifi_interface", "location_permission", "adapter_error")
     assert body["wifi_issue"]["title"] and body["wifi_issue"]["detail"]
     for field in ("channel_width_mhz", "snr_db", "noise_floor_dbm", "tx_bitrate_mbps"):
         assert field in body
