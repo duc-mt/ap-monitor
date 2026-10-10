@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import json
 
@@ -27,5 +26,7 @@ async def save_raw_settings(conn: aiosqlite.Connection, data: dict) -> None:
             INSERT INTO settings (key, value) VALUES (?, ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
             """,
+
+from __future__ import annotations
             (_SETTINGS_KEY, payload),
         )

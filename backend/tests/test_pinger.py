@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import asyncio
 
@@ -22,6 +21,8 @@ From 192.168.1.1 icmp_seq=1 Destination Host Unreachable
 --- 10.255.255.1 ping statistics ---
 3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 2000ms
 """
+
+from __future__ import annotations
 
 DNS_FAILURE_OUTPUT_ERR = "ping: badhostname.invalid: Name or service not known\n"
 

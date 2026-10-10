@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from typing import Literal
 
@@ -11,6 +10,8 @@ class ClassificationThresholds(BaseModel):
     the UI reads these back from /api/settings and renders whatever it is
     given, so changing a number here changes the dashboard immediately.
     """
+
+from __future__ import annotations
 
     excellent_latency_ms: float = 30
     excellent_packet_loss_pct: float = 1

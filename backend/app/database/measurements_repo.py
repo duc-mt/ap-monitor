@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
@@ -32,6 +31,8 @@ async def insert_measurement(
             INSERT INTO measurements (target_id, timestamp, latency_ms, packet_loss, jitter_ms, success, error)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
+
+from __future__ import annotations
             (
                 data.target_id,
                 data.timestamp,

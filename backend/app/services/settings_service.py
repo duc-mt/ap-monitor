@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import aiosqlite
 
@@ -33,6 +32,8 @@ async def update_settings(
     `notifications.on_offline` doesn't silently reset
     `notifications.cooldown_seconds` back to its default.
     """
+
+from __future__ import annotations
     global _cached
     current = await get_settings(conn)
     current_dict = current.model_dump()
