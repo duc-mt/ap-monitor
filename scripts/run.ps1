@@ -1,12 +1,15 @@
 <#
-.SYNOPSIS
-  Run AP Monitor straight from a source checkout on Windows.
-.DESCRIPTION
-  No administrator rights and no service install: sets up a private virtualenv,
-  builds the dashboard if needed, starts the backend and opens it in your
-  browser. Press Ctrl+C to stop.
-.PARAMETER NoOpen
-  Do not open the browser.
+==============================================================================
+Script Name:   run.ps1
+Description:   Run AP Monitor straight from a source checkout on Windows.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         .\scripts\run.ps1 [-NoOpen]
+Notes:         Sets up virtualenv, builds dashboard if needed, runs API.
+==============================================================================
 #>
 param([switch]$NoOpen)
 $ErrorActionPreference = "Stop"
