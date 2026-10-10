@@ -154,7 +154,7 @@ async def check_icmp(host: str, count: int, timeout: float) -> PingBatchResult:
         stdout_bytes, stderr_bytes = await asyncio.wait_for(
             proc.communicate(), timeout=overall_timeout
         )
-    except TimeoutError:
+    except (asyncio.TimeoutError, TimeoutError):
         proc.kill()
         await proc.wait()
         return PingBatchResult(
