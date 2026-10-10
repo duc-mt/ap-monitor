@@ -1,7 +1,7 @@
 """
 ==============================================================================
 Module Name:   __init__.py
-Description:   Source module __init__.py.
+Description:   Public entry point for OS-aware WiFi metric collection.
 Author:        Mai Tan Duc <ducmai.network@gmail.com>
 Created:       2026-10-10
 Version:       1.0.0
@@ -10,8 +10,10 @@ License:       MIT
 Usage:         python3 __init__.py [options]
 Notes:         Requires Python 3.8+
 ==============================================================================
-"""
 
+Picks the right concrete adapter for `sys.platform` once (Linux, macOS or
+Windows), then exposes a small platform-independent API. Callers (the
+monitoring loop, walk-test sessions, the API layer) should only ever import
 from here - never reach into `.linux`/`.macos`/`.windows` directly, so a
 further platform can be added without touching any call site.
 
@@ -23,7 +25,6 @@ would otherwise spawn `iw`/`nmcli` far more often than the underlying
 radio state actually changes.
 """
 
-from __future__ import annotations
 
 import sys
 import time

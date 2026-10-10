@@ -40,6 +40,5 @@ async def save_raw_settings(conn: aiosqlite.Connection, data: dict) -> None:
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
             """,
 
-from __future__ import annotations
             (_SETTINGS_KEY, payload),
         )

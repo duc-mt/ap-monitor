@@ -47,7 +47,6 @@ async def insert_measurement(
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
 
-from __future__ import annotations
             (
                 data.target_id,
                 data.timestamp,
