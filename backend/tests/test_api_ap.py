@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 def test_status_reports_platform_and_a_wifi_issue_when_there_is_no_interface(client):
     body = client.get("/api/status").json()
     assert body["platform"] in ("linux", "darwin", "win32")
