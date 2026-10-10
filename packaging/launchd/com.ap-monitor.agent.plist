@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  A LaunchAgent, not a LaunchDaemon - deliberately. This runs as the
+  logged-in user in their GUI session rather than as a system-wide root
+  daemon, for two concrete reasons:
+
+  1. CoreWLAN (app/monitoring/wifi/macos.py) needs to run inside a real
+     user session for macOS's Location Services permission prompt to
+     apply to it at all - a root LaunchDaemon has no user to prompt, and
+     TCC (Apple's privacy-permission framework) has no meaningful way to
+     grant it access to WiFi SSID/BSSID data.
+  2. It matches how every other menu-bar-style "runs in the background for
+     one user" macOS tool is packaged, and needs no `sudo`/root at all to
+     install or run.
+
+  Nothing here needs elevated privileges: the system `ping` binary this
+  app shells out to (app/monitoring/pinger.py) is already privileged for
+  ICMP on macOS, same as any user running `ping` from Terminal, and
+  `system_profiler`/CoreWLAN need no special entitlement either - contrast
+  with Linux, where the systemd unit grants CAP_NET_RAW/CAP_NET_ADMIN
+  explicitly (see packaging/systemd/ap-monitor.service).
+
+  Installed by scripts/install-macos.sh to
+  ~/Library/LaunchAgents/com.ap-monitor.agent.plist, with the two
+  {{PLACEHOLDER}} paths below filled in for the installing user.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ap-monitor.agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{INSTALL_DIR}}/venv/bin/python</string>
+        <string>-m</string>
+        <string>uvicorn</string>
+        <string>app.main:app</string>
+        <string>--host</string>
+        <string>127.0.0.1</string>
+        <string>--port</string>
+        <string>8766</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{INSTALL_DIR}}/backend</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>AP_MONITOR_DATA_DIR</key>
+        <string>{{DATA_DIR}}</string>
+    </dict>
+
+    <!-- Start on login and keep running - matches the systemd unit's
+         Restart=on-failure intent, without KeepAlive's SuccessfulExit
+         variant, so a deliberate `ap-monitor` stop via the API doesn't
+         fight with launchd trying to relaunch it immediately. -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{DATA_DIR}}/logs/ap-monitor.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{DATA_DIR}}/logs/ap-monitor.err.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

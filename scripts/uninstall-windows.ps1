@@ -1,0 +1,30 @@
+<#
+.SYNOPSIS
+  Remove the AP Monitor scheduled task and installed files.
+.PARAMETER RemoveData
+  Also delete the database and logs (kept by default).
+#>
+param([switch]$RemoveData)
+$ErrorActionPreference = "Stop"
+
+$InstallDir = Join-Path $env:LOCALAPPDATA "ap-monitor"
+$TaskName = "AP Monitor"
+
+if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+  Write-Host "==> Stopping and removing the scheduled task"
+  Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+  Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+}
+
+Write-Host "==> Removing installed files"
+foreach ($sub in @("backend", "venv", "frontend")) {
+  $path = Join-Path $InstallDir $sub
+  if (Test-Path $path) { Remove-Item -Recurse -Force $path }
+}
+if ($RemoveData) {
+  Write-Host "==> Removing data and logs"
+  if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir }
+} else {
+  Write-Host "    Data and logs kept in $InstallDir (re-run with -RemoveData to delete them)."
+}
+Write-Host "Done."

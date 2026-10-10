@@ -1,0 +1,77 @@
+[Unit]
+Description=AP Monitor - WiFi signal, roaming, and connectivity monitoring
+Documentation=https://github.com/example/ap-monitor
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=ap-monitor
+Group=ap-monitor
+
+WorkingDirectory=/opt/ap-monitor/backend
+Environment=PYTHONUNBUFFERED=1
+Environment=AP_MONITOR_DATA_DIR=/var/lib/ap-monitor
+Environment=AP_MONITOR_HOST=127.0.0.1
+Environment=AP_MONITOR_PORT=8766
+ExecStart=/opt/ap-monitor/venv/bin/python -m uvicorn app.main:app --host ${AP_MONITOR_HOST} --port ${AP_MONITOR_PORT}
+
+Restart=on-failure
+RestartSec=5
+
+# journald is the only log sink - no files, no rotation to manage ourselves.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ap-monitor
+
+# --- Security hardening -----------------------------------------------
+# The service runs as its own unprivileged system user (created by
+# scripts/install.sh) with no shell and no login. It needs exactly two
+# extra privileges beyond a normal process:
+#   - CAP_NET_RAW, to open ICMP sockets for ping. Rather than relying on
+#     the system `ping` binary being setuid-root or carrying its own file
+#     capability (which varies by distro and would be a much bigger
+#     grant), we hand this one capability directly to the service via
+#     systemd's "ambient capabilities" mechanism. It is then inherited by
+#     the `ping` child process the app spawns.
+#   - CAP_NET_ADMIN, so the on-demand "Scan Environment" feature can
+#     trigger a fresh `iw scan` (an active scan request needs this
+#     capability; without it, the app falls back to `iw scan dump`, which
+#     only reads whatever the kernel already has cached and may return
+#     nothing useful). This is only ever exercised by that one explicit,
+#     user-triggered action - never by the background monitoring loop.
+# Everything else about the process is as locked down as a
+# network-facing daemon reasonably can be.
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ap-monitor
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @mount @debug @cpu-emulation @obsolete
+UMask=0027
+
+# The dashboard/API only ever listens on loopback (see app.config), so no
+# network namespace restriction is applied here beyond that.
+
+[Install]
+WantedBy=multi-user.target
