@@ -1,32 +1,15 @@
 """
-Linux WiFi adapter.
-
-Two tools, two different jobs - neither one alone gives the full metric
-set the spec asks for:
-
-- `nmcli` gives us interface discovery, connection/IP state, and enough of
-  the associated-AP row (SSID/BSSID/channel/frequency/signal%) to identify
-  what we're connected to. It does NOT expose RSSI in dBm, noise floor,
-  PHY mode, channel width, or MCS index.
-- `iw` gives us the RF-layer detail nmcli doesn't: signal in dBm, tx/rx
-  bitrate, MCS index, and channel width, parsed out of `iw dev <if> link`.
-  Noise floor (needed for a real SNR) comes from `iw dev <if> survey dump`
-  when the driver reports it at all - many don't, in which case it and
-  the derived SNR both correctly stay None rather than being guessed at.
-
-Both commands run as plain argv lists (no `shell=True`) with a strict
-timeout, exactly like `pinger.py`'s subprocess calls. Neither triggers a
-scan: `iw ... link`/`survey dump` and `nmcli ... show` all read state
-NetworkManager/the kernel already have. `nmcli dev wifi list` is the one
-that needs care: its documented default is `--rescan auto`, which REQUESTS
-A FRESH SCAN whenever the last one is more than ~30s old - polled every
-few seconds (or every 500ms in walk-test mode) that would quietly turn
-into repeated active scans while associated, with the off-channel time and
-latency spikes the spec's "normal monitoring must not scan surrounding
-networks" rule exists to prevent. So it is always invoked with an explicit
-`--rescan no`, which reads only NetworkManager's existing scan results.
-(An earlier revision of this docstring claimed omitting the flag was
-equivalent to "no rescan" - it isn't, which is why this is spelled out.)
+==============================================================================
+Module Name:   linux.py
+Description:   Source module linux.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 linux.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

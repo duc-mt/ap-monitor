@@ -1,44 +1,15 @@
 """
-macOS WiFi adapter.
-
-Primary path: the CoreWLAN framework via `pyobjc` (CWWiFiClient /
-CWInterface). This reads kernel/driver state directly through Apple's own
-API - no subprocess, no scan, non-blocking. This is the path the spec
-requires for the background monitoring and walk-test loops.
-
-Fallback path (only used if pyobjc/CoreWLAN isn't importable): the
-`airport` binary's `-I` flag, and *only* that flag -
-`/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I`
-reads the current association's kernel state immediately, unlike
-`system_profiler SPAirPortDataType`, which forces an active scan and can
-block for multiple seconds - that command is reserved entirely for the
-explicit, user-triggered "Scan Environment" feature (Stage 11) and must
-never be called from this path.
-
-IMPORTANT - unverified on real hardware: this file was written and
-type-checked in a Linux container with no macOS device, no pyobjc
-install, and no way to run either code path against real WiFi hardware.
-The CoreWLAN property names, enum members, and the specific 0-vs-None
-handling below are based on the framework's documented public API, not
-on having run this. Test it on real hardware before relying on it, the
-same way Internet Monitor's own Windows toast-notification path carried
-an explicit "unverified" flag until someone confirmed it worked.
-
-Known real gaps in the CoreWLAN path:
-- `CWInterface` has no MCS-index property in its public API at all, so
-  `mcs_index` is always None here (it's only ever populated via the
-  `airport -I` fallback, whose output includes an "MCS:" line on the
-  macOS versions where that still exists).
-- IPv4/gateway/DNS aren't part of CoreWLAN either; they're read with three
-  small, separate subprocess calls (`ipconfig`, `route`, `scutil`), each
-  independently optional and best-effort.
-- On macOS 15+ (Sequoia), `ssid()`/`bssid()` can return None unless the
-  calling process has Location Services authorization - the same
-  restriction Internet Monitor already had to document for
-  `networksetup -getairportnetwork`. When that happens here, RSSI/noise/
-  channel/rate are typically still readable; only the name fields go
-  missing, so treat a None SSID as "no location permission", not as "not
-  connected", and check `interface_state`/`rssi_dbm` for actual link status.
+==============================================================================
+Module Name:   macos.py
+Description:   Source module macos.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 macos.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

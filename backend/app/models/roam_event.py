@@ -1,6 +1,15 @@
 """
-Models for a confirmed roam event (see app.services.roaming_service) and
-the roaming state machine's state vocabulary.
+==============================================================================
+Module Name:   roam_event.py
+Description:   Source module roam_event.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 roam_event.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

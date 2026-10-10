@@ -1,8 +1,15 @@
 """
-Tests for app.services.walk_test_service, against the real `db` fixture.
-The sample interval is set to the smallest value the settings model allows
-(100ms - see AppSettings.walk_test_sample_interval_ms) so these tests don't
-have to wait around at the spec's 500ms default.
+==============================================================================
+Module Name:   test_walk_test_service.py
+Description:   Source module test_walk_test_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_walk_test_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

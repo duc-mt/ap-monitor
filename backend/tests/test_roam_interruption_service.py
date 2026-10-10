@@ -1,13 +1,15 @@
 """
-Tests for app.services.roam_interruption_service.
-
-_finalize/_classify_ms/_estimate_confidence are pure enough to test
-directly with hand-built _Watch/_Sample objects - no need to actually run
-the real-time polling loop (_run_watch sleeps for whole seconds at a time,
-which would make for a slow, flaky test for no real benefit). The one
-integration-style case worth covering against the real `db` fixture is
-start_watch()'s immediate "nothing to measure" path, since that one skips
-the background task entirely.
+==============================================================================
+Module Name:   test_roam_interruption_service.py
+Description:   Source module test_roam_interruption_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_roam_interruption_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

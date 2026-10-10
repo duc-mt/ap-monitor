@@ -1,18 +1,15 @@
 """
-OS-aware adapter interface for WiFi metric collection.
-
-Each platform gets its own adapter (LinuxWifiAdapter, MacOSWifiAdapter)
-implementing this interface; app.monitoring.wifi picks the right one for
-sys.platform once, and the rest of the app only ever talks to this
-interface - never to a concrete adapter, a raw subprocess call, or a raw
-pyobjc/CoreWLAN object.
-
-A concrete method should return `None` for a field (not raise, not
-fabricate a value) when the OS/driver simply doesn't expose that piece of
-data. The one exception is a genuine timeout/crash talking to the OS
-itself, which should still be caught inside the adapter and turned into
-"metrics we could get, with the rest left None" rather than propagating
-and killing the monitoring loop for the whole app.
+==============================================================================
+Module Name:   base.py
+Description:   Source module base.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 base.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

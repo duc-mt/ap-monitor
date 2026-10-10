@@ -1,5 +1,16 @@
-"""Tests for the AP/signal analysis that backs the dashboard timeline and
-the Walk Test results page, plus the endpoints that expose it."""
+"""
+==============================================================================
+Module Name:   test_ap_analysis.py
+Description:   Source module test_ap_analysis.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_ap_analysis.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
+"""
 
 from __future__ import annotations
 

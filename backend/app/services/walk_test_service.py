@@ -1,24 +1,15 @@
 """
-Walk-test session lifecycle: start/stop, plus the dense (default 500ms)
-background sampling loop for whichever session is currently recording.
-
-Supports exactly one recording session at a time, system-wide. Walk-test
-mode is inherently a single-person, walk-around-the-site activity - the
-spec's workflow describes one interface and one set of targets per
-session, with no mention of running several at once, so this keeps the
-lifecycle (and its state) simple rather than building out multi-session
-bookkeeping nothing asks for.
-
-Latency is intentionally NOT re-checked fresh on every 500ms sample tick:
-a real ping (even with a short timeout) can't complete fast enough to fit
-that budget without a real result yet, and a walk-test explicitly must
-not require internet connectivity to run at all. Instead, a separate,
-slower ping loop (once per second, and only if the session has at least
-one target_id) updates the session's "most recent result", and each fast
-sample tick just reads whatever that currently is - possibly up to ~1s
-stale relative to the WiFi reading taken in the same row, which is an
-honest tradeoff given the two measurements fundamentally can't share a
-timescale here.
+==============================================================================
+Module Name:   walk_test_service.py
+Description:   Source module walk_test_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 walk_test_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

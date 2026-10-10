@@ -1,17 +1,18 @@
-# -*- coding: utf-8 -*-
 """
 ==============================================================================
 Module Name:   serve.py
-Description:   Console-less service entry point for AP Monitor backend.
+Description:   Source module serve.py.
 Author:        Mai Tan Duc <ducmai.network@gmail.com>
 Created:       2026-10-10
 Version:       1.0.0
 License:       MIT
 ==============================================================================
-
-Console-less entry point: `python -m app.serve` (or `pythonw -m app.serve`).
-Provides logging redirect for Windows pythonw.exe execution.
+Usage:         python3 serve.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
+
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import sys

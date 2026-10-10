@@ -1,14 +1,15 @@
 """
-Data model for a single WiFi metrics snapshot.
-
-Every field below is genuinely optional: different OSes, drivers, and
-chipsets expose different subsets of this data, and this module never
-fabricates a value it can't actually read. `None` means "the platform or
-driver did not report this" - it must never be silently turned into `0`
-or an empty string, since both are meaningfully different from
-"unavailable" (0 dBm RSSI and 0% signal are both real, if unlikely,
-readings; a genuinely empty DNS server list is different from "we
-couldn't determine the DNS servers").
+==============================================================================
+Module Name:   models.py
+Description:   Source module models.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 models.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

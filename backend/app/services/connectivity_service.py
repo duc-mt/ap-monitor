@@ -1,34 +1,15 @@
 """
-Computes the app's headline connectivity state - one of the eight values
-the spec calls out (see app.models.status.ConnectivityState) - from the
-same measurements data the status/history views already read, plus an
-optional WiFi-connection reading the caller supplies.
-
-Split into two functions on purpose (Stage 12): compute_status() is pure
-and side-effect-free, safe to call from a read-only endpoint on every
-poll; evaluate() wraps it with the notify-on-transition logic and owns the
-module's transition-tracking state, and must only ever be called from the
-scheduler's own per-tick loop - calling it from status_service (or
-anywhere else read-only) would fire spurious notifications and corrupt
-that state every time someone loads the dashboard.
-
-Three independent readings feed the headline `overall` state:
-- wifi_connected: is the WiFi radio actually associated right now. Passed
-  in by the caller (the scheduler, from Stage 9 onward) rather than read
-  here directly, so this module stays trivially testable without mocking
-  an entire OS-specific WiFi adapter - see evaluate()'s docstring.
-- gateway_reachable: latest measurement for whichever enabled target has
-  is_gateway=True, if one is configured.
-- internet_state: "unavailable" / "degraded" / "available", derived from
-  how many enabled non-gateway targets' latest measurements succeeded,
-  using the configurable quorum in settings.internet_quorum.
-
-NOTE (Stage 6): Internet Monitor paired this with a separate, more
-conservative outage_service that answered "has every external target
-failed for long enough to count as a recorded outage" and owned an
-`outages` table. That feature was removed - AP Monitor's connectivity
-state model (this file) replaces the online/offline boolean pair with the
-richer named-state model below, rather than an outage span table.
+==============================================================================
+Module Name:   connectivity_service.py
+Description:   Source module connectivity_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 connectivity_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

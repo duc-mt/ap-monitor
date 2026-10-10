@@ -1,37 +1,15 @@
 """
-Windows WiFi adapter.
-
-Everything comes from two built-in tools, so nothing needs installing and
-no admin rights are required:
-
-- `netsh wlan show interfaces` - the connected AP: state, SSID, BSSID, band,
-  channel, radio type (802.11ac/ax/...), link rates and signal quality.
-- `netsh wlan show networks mode=bssid` - every BSSID the adapter can hear,
-  used only by the on-demand "Scan Environment" action. Unlike macOS this
-  gives real neighbor BSSIDs, so on Windows the scan is more useful.
-- `ipconfig` - IPv4 address and default gateway (what roam detection uses to
-  notice an IP change), cached briefly because it is not radio state.
-
-Things a reader should know before trusting the numbers:
-
-1. **RSSI is derived.** netsh reports signal *quality* as a percentage, not
-   dBm. Microsoft documents the mapping (WLAN_SIGNAL_QUALITY: 0 = -100 dBm,
-   100 = -50 dBm, linear in between), which is what `rssi_from_quality`
-   applies. It is accurate to about the 2 dB the percentage can resolve and
-   cannot show anything stronger than -50 dBm. Noise floor and SNR are not
-   exposed at all, so they stay None.
-2. **Language.** netsh prints localized labels. English labels are matched
-   exactly; for other languages a structural fallback recovers the fields
-   whose *values* are recognizable (MAC addresses, "92%", "5 GHz") and the
-   fixed order netsh prints them in. It is best-effort - see
-   `parse_interfaces`.
-3. **Location permission.** Recent Windows 11 builds refuse to show WLAN
-   details unless Location services are on, printing a message instead. That
-   is detected and reported as the `location_permission` issue rather than
-   being mistaken for "no WiFi".
-
-No call here triggers a scan: `show interfaces`/`show networks` read what
-the WLAN service already has. Each command is a plain argv list (no shell).
+==============================================================================
+Module Name:   windows.py
+Description:   Source module windows.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 windows.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

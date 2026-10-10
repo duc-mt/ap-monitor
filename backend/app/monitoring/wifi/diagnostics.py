@@ -1,12 +1,15 @@
 """
-Turns "the WiFi fields are empty" into an explanation the user can act on.
-
-The failure this exists for: on macOS and Windows the OS withholds the SSID
-and BSSID from any process that lacks Location permission. Everything still
-"works" - pings succeed, RSSI may even read fine - but the connected AP is
-blank and roaming can never be detected, with no error anywhere. A monitor
-that silently shows nothing is indistinguishable from a broken one, so every
-such case is surfaced as a WifiIssue in /api/status.
+==============================================================================
+Module Name:   diagnostics.py
+Description:   Source module diagnostics.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 diagnostics.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

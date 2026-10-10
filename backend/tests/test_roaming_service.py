@@ -1,9 +1,15 @@
 """
-Tests for the roaming detection state machine. No WiFi adapter mocking is
-needed here - roaming_service.evaluate() takes a plain WifiMetrics reading
-as input, so these tests just hand it a scripted sequence of readings and
-check the resulting states and recorded roam_events rows against a real
-(temp, per-test) database via the `db` fixture.
+==============================================================================
+Module Name:   test_roaming_service.py
+Description:   Source module test_roaming_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_roaming_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

@@ -1,13 +1,15 @@
 """
-Tests for the Windows WiFi adapter's parsing and metric mapping.
-
-No Windows machine is used: the parsers are pure functions over `netsh` /
-`ipconfig` text, and the adapter tests replace its subprocess runner. The
-sample outputs follow the layout of real English-language Windows 10/11
-`netsh wlan show interfaces` / `show networks mode=bssid` / `ipconfig`
-output. They confirm our code handles that layout, not that every Windows
-build prints exactly this - see the note at the top of
-app/monitoring/wifi/windows.py.
+==============================================================================
+Module Name:   test_wifi_windows.py
+Description:   Source module test_wifi_windows.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_wifi_windows.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

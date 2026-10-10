@@ -1,27 +1,15 @@
 """
-Watches connectivity after a confirmed roam and fills in the "Estimated
-Connectivity Interruption" fields on its roam_events row: gateway/internet
-interruption duration, packet loss and peak latency observed during the
-transition, a success flag, and a classification/confidence verdict.
-
-READ THIS BEFORE CHANGING THE CLASSIFICATION THRESHOLDS: the spec's bands
-(Excellent <50ms, Good 50-150ms, Fair 150-300ms, Poor >=300ms, Failed) are
-genuinely millisecond-scale - finer than this app's ping-interval-driven
-measurement can usually resolve. With ping targets checking every ~5s by
-default, a real gap of "some failed pings, then a success" can only ever
-be bounded to whole ping-interval resolution (seconds, not milliseconds),
-which is why a roam with any actual failed ping will realistically land in
-"poor" or "failed" almost every time - that is an honest reflection of
-measurement resolution, not a bug. To give the finer bands a real chance
-of firing, this file classifies by *peak_latency_ms* instead of duration
-whenever every ping during the watch window actually succeeded (packet
-loss 0%) - a ping RTT spiking from a normal ~15ms to 180ms right after a
-roam *is* a genuine millisecond-precision signal of a brief, sub-ping-
-interval disruption (exactly what a fast 802.11r/k/v roam looks like: no
-dropped packets, just a momentary latency bump), even though nothing
-literally timed out. `confidence` exists precisely to flag how much to
-trust either kind of estimate; a caller should never read `classification`
-without also showing `confidence` next to it.
+==============================================================================
+Module Name:   roam_interruption_service.py
+Description:   Source module roam_interruption_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 roam_interruption_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

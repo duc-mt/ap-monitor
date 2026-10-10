@@ -1,12 +1,15 @@
 """
-Pure analysis of a time-ordered series of WiFi readings: which access point
-the client was on, for how long, how strong the signal was, where it
-dropped below a usable level, and when it switched APs.
-
-Deliberately free of I/O and of any dependency on where the readings came
-from: it accepts anything with the WiFi sample attribute names (a
-WifiMetrics, a WalkTestSampleOut, a test stub), so the same code analyses a
-walk-test session and a window of the always-on poll.
+==============================================================================
+Module Name:   ap_analysis_service.py
+Description:   Source module ap_analysis_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 ap_analysis_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

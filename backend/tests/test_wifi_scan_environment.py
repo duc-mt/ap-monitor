@@ -1,8 +1,15 @@
 """
-Tests for app.monitoring.wifi.scan_environment - the platform-independent
-orchestration on top of each adapter's scan_neighbors(): excluding the
-currently-connected network from its own neighbor list, and flagging
-co-channel interference against the live connection.
+==============================================================================
+Module Name:   test_wifi_scan_environment.py
+Description:   Source module test_wifi_scan_environment.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_wifi_scan_environment.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

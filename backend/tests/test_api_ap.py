@@ -1,4 +1,16 @@
-"""HTTP-level checks for the AP-facing endpoints (routing, validation, shape)."""
+"""
+==============================================================================
+Module Name:   test_api_ap.py
+Description:   Source module test_api_ap.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_api_ap.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
+"""
 
 from __future__ import annotations
 

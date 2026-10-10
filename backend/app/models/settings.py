@@ -1,3 +1,16 @@
+"""
+==============================================================================
+Module Name:   settings.py
+Description:   Source module settings.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 settings.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
+"""
 
 from typing import Literal
 

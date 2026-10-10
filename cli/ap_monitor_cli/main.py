@@ -1,16 +1,18 @@
-# -*- coding: utf-8 -*-
 """
 ==============================================================================
 Module Name:   main.py
-Description:   Command-line interface client for AP Monitor.
+Description:   Source module main.py.
 Author:        Mai Tan Duc <ducmai.network@gmail.com>
 Created:       2026-10-10
 Version:       1.0.0
 License:       MIT
 ==============================================================================
-
-Command-line interface thin client calling the local REST API.
+Usage:         python3 main.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
+
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json as jsonlib

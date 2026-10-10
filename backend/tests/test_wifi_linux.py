@@ -1,7 +1,15 @@
 """
-Tests for the Linux WiFi adapter. Every case mocks `asyncio.create_subprocess_exec`
-with real captured-shape nmcli/iw output, the same convention test_pinger.py
-uses for `ping` - no real network device or root privileges needed.
+==============================================================================
+Module Name:   test_wifi_linux.py
+Description:   Source module test_wifi_linux.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_wifi_linux.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

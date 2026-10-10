@@ -1,9 +1,15 @@
 """
-Response shapes for signal/AP analysis - the "which AP was I on, how strong
-was it, and where did it get weak" view that both the Dashboard timeline and
-the Walk Test results page are built from. One shape serves both because a
-walk-test session and a window of the always-on WiFi poll are the same kind
-of data: a time-ordered series of WiFi readings.
+==============================================================================
+Module Name:   wifi_analysis.py
+Description:   Source module wifi_analysis.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 wifi_analysis.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

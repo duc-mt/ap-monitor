@@ -1,12 +1,15 @@
 """
-Default-gateway detection, used once each to seed the "Gateway" target the
-first time a database is created (see app/database/targets_repo.py) -
-never on a recurring basis, so there's no caching here (contrast with
-app/monitoring/wifi/, which is polled continuously and does cache).
-
-Gateway lookups per platform: Linux reads /proc/net/route directly (see
-app/database/targets_repo.py), macOS uses `route -n get default`, and Windows
-uses `route print -4`.
+==============================================================================
+Module Name:   network_info.py
+Description:   Source module network_info.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 network_info.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

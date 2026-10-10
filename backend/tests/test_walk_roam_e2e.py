@@ -1,10 +1,15 @@
 """
-End-to-end: walk between two access points through the real HTTP API.
-
-This is the scenario that looked broken from the user's side - "I walk around
-and nothing shows" - so it drives every layer together: the walk-test sampler,
-the roam detector it now feeds, the stored samples, and the analysis/CSV the
-results page is built from. Only the OS-level WiFi read is simulated.
+==============================================================================
+Module Name:   test_walk_roam_e2e.py
+Description:   Source module test_walk_roam_e2e.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_walk_roam_e2e.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

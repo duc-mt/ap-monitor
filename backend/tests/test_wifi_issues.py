@@ -1,5 +1,16 @@
-"""Tests for the 'why is the AP info empty' diagnostics and the tri-state
-connection reading that stops an unreadable radio being reported as down."""
+"""
+==============================================================================
+Module Name:   test_wifi_issues.py
+Description:   Source module test_wifi_issues.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_wifi_issues.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
+"""
 
 from __future__ import annotations
 

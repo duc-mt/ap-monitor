@@ -1,17 +1,15 @@
 """
-Tests for the macOS WiFi adapter.
-
-No real Mac, no pyobjc install, and no real WiFi hardware are needed or
-used: the CoreWLAN happy-path tests inject a fake `CoreWLAN` module into
-`sys.modules` that mimics the real framework's public API surface closely
-enough to exercise our adapter's parsing/mapping logic, and the fallback
-tests mock `asyncio.create_subprocess_exec` for `airport -I`, the same
-convention every other subprocess-based test in this suite uses.
-
-See the "unverified on real hardware" note at the top of
-app/monitoring/wifi/macos.py: these tests confirm our code does what we
-intended with the CoreWLAN API *as documented*, not that the real
-framework behaves exactly as documented on every macOS version.
+==============================================================================
+Module Name:   test_wifi_macos.py
+Description:   Source module test_wifi_macos.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 test_wifi_macos.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

@@ -1,11 +1,15 @@
 """
-Small subprocess helpers shared by every module that shells out.
-
-On Windows, a process started without a console (a scheduled task, a
-service, pythonw.exe) pops up a visible console window for every child it
-spawns unless CREATE_NO_WINDOW is passed - so a monitor that runs `ping` and
-`netsh` every few seconds would flash windows constantly. `NO_WINDOW` is an
-empty dict everywhere else, so call sites can always splat it.
+==============================================================================
+Module Name:   _proc.py
+Description:   Source module _proc.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 _proc.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

@@ -1,37 +1,15 @@
 """
-Per-interface roaming state machine.
-
-Feed it one fresh WifiMetrics reading per tick via `evaluate()`. It walks
-through the seven states the spec names:
-
-    unknown -> disconnected/connecting -> connected
-                                              |
-                              (BSSID changes, same SSID)
-                                              v
-                                       roam_candidate  --(different BSSID next tick)--> roam_candidate (restarts)
-                                              |                                    \
-                                (same new BSSID holds)                    (reverts to old BSSID)
-                                              v                                      v
-                                          roaming  (roam_events row written here)  connected
-                                              |
-                                    (still on new BSSID)
-                                              v
-                                        stabilizing
-                                              |
-                                    (still on new BSSID)
-                                              v
-                                          connected
-
-A single-tick BSSID flicker never reaches roam_candidate a second time with
-a *matching* new BSSID, so it never gets recorded - this is the whole
-mechanism for telling a genuine roam apart from noise. A different SSID
-entirely (not just a different BSSID) is treated as a fresh connection, not
-a roam, per the spec ("BSSID change while SSID remains unchanged").
-
-Everything here is about detecting *that* a roam happened and what
-changed. How disruptive it was - gateway/internet interruption, packet
-loss, peak latency, a success/classification/confidence verdict - is
-Stage 10's job; those columns are left NULL on the row this file writes.
+==============================================================================
+Module Name:   roaming_service.py
+Description:   Source module roaming_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 roaming_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

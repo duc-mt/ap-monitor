@@ -1,18 +1,15 @@
 """
-Two related but distinct things live here:
-
-- classify(): the simple, pre-existing latency/packet-loss -> Quality
-  ("excellent"/"good"/"fair"/"poor"/"unknown") classifier, unchanged from
-  Internet Monitor. Still used for the quick status badge.
-
-- compute_wireless_quality_score() (Stage 12): the spec's separate 0-100
-  "client experience" score, built from RSSI, latency, packet loss, and
-  jitter, minus penalties for recent disconnects and failed roams. Per the
-  spec's explicit rule, a component with no data right now (most commonly
-  RSSI - not every platform/driver/moment has one) is left OUT of the
-  average entirely rather than counted as a 0, so an otherwise-healthy
-  connection is never penalized just because one optional reading happened
-  to be unavailable.
+==============================================================================
+Module Name:   quality_service.py
+Description:   Source module quality_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 quality_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

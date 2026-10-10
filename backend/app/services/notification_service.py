@@ -1,26 +1,15 @@
 """
-Desktop notifications.
-
-- Linux: `notify-send` (part of libnotify, present on virtually every Linux
-  desktop - GNOME, KDE, XFCE, etc.).
-- macOS: `osascript` (AppleScript), which ships with every Mac - no install
-  needed. This gets a real Notification Center banner without pulling in
-  any third-party dependency.
-
-- Windows: `powershell` driving the WinRT toast API (built in since Windows
-  10). The title and message are handed to PowerShell through environment
-  variables rather than interpolated into the script, so text from target
-  names or error output can never be parsed as PowerShell code.
-
-Either way we shell out with argv-list subprocess calls (no shell=True),
-keeping the monitoring service itself free of any GUI-toolkit dependency
-and safe to run headless - and safe from injection even though titles and
-messages can contain target names/error text we don't fully control.
-
-State transitions (offline/online) always fire immediately - a user always
-wants to know the instant they lose or regain connectivity. Threshold
-alerts (latency/packet-loss) are debounced per (kind, target) key so a
-flapping metric doesn't spam five notifications a minute.
+==============================================================================
+Module Name:   notification_service.py
+Description:   Source module notification_service.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 notification_service.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations

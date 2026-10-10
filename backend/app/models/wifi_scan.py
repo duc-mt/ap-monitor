@@ -1,7 +1,15 @@
 """
-Models for the on-demand "Scan Environment" feature. Never populated by
-the background monitoring loop - only by an explicit, user-triggered scan
-(see app.monitoring.wifi.scan_environment).
+==============================================================================
+Module Name:   wifi_scan.py
+Description:   Source module wifi_scan.py.
+Author:        Mai Tan Duc <ducmai.network@gmail.com>
+Created:       2026-10-10
+Version:       1.0.0
+License:       MIT
+==============================================================================
+Usage:         python3 wifi_scan.py [options]
+Notes:         Requires Python 3.8+
+==============================================================================
 """
 
 from __future__ import annotations
