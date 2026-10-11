@@ -46,16 +46,26 @@ dashboard if needed, starts the backend and opens your browser at
 dependencies have wheels; 3.14 may need newer pins), and Node.js 18+ only if
 `frontend/dist` is not already built.
 
-**Linux / macOS**
-
+**Linux / macOS / WSL**
 ```bash
+./run.sh                    # Root launcher (auto-detects python, sets up .venv & dependencies)
+./run.sh --help             # Run CLI commands directly
+# Or using the scripts folder:
 ./scripts/run.sh            # add --no-open to skip opening the browser
 ```
 
-**Windows** — double-click `scripts\run.bat`, or in PowerShell:
-
-```powershell
+**Windows** — double-click `run.bat` or in CMD / PowerShell:
+```cmd
+run.bat                     # Root launcher
+run.bat --help              # Run CLI commands directly
+# Or using PowerShell script:
 .\scripts\run.ps1           # add -NoOpen to skip opening the browser
+```
+
+**Universal (Python directly)**
+```bash
+python3 run.py              # Linux / macOS
+python run.py               # Windows
 ```
 
 A virtualenv copied from another operating system (for example one inside a
