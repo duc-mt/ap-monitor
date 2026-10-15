@@ -37,16 +37,13 @@ def _row_to_measurement(row: aiosqlite.Row) -> MeasurementOut:
     )
 
 
-async def insert_measurement(
-    conn: aiosqlite.Connection, data: MeasurementCreate
-) -> int:
+async def insert_measurement(conn: aiosqlite.Connection, data: MeasurementCreate) -> int:
     async with write_transaction() as tx:
         cursor = await tx.execute(
             """
             INSERT INTO measurements (target_id, timestamp, latency_ms, packet_loss, jitter_ms, success, error)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-
             (
                 data.target_id,
                 data.timestamp,
@@ -60,6 +57,15 @@ async def insert_measurement(
     return cursor.lastrowid
 
 
+def decimate_measurements(rows: list[MeasurementOut], target_count: int) -> list[MeasurementOut]:
+    """Uniformly downsample rows to at most target_count items, preserving endpoints."""
+    if len(rows) <= target_count or target_count < 2:
+        return rows
+    step = (len(rows) - 1) / (target_count - 1)
+    indices = {int(round(i * step)) for i in range(target_count)}
+    return [rows[i] for i in sorted(indices)]
+
+
 async def list_measurements(
     conn: aiosqlite.Connection,
     *,
@@ -67,11 +73,9 @@ async def list_measurements(
     start: str | None = None,
     end: str | None = None,
     limit: int = 1000,
+    decimate_to: int | None = None,
 ) -> list[MeasurementOut]:
-    query = (
-        "SELECT m.*, t.name FROM measurements m "
-        "JOIN targets t ON t.id = m.target_id WHERE 1=1"
-    )
+    query = "SELECT m.*, t.name FROM measurements m JOIN targets t ON t.id = m.target_id WHERE 1=1"
     params: list = []
     if target_id is not None:
         query += " AND m.target_id = ?"
@@ -86,12 +90,13 @@ async def list_measurements(
     params.append(limit)
     async with conn.execute(query, params) as cursor:
         rows = await cursor.fetchall()
-    return [_row_to_measurement(r) for r in rows]
+    results = [_row_to_measurement(r) for r in rows]
+    if decimate_to is not None and decimate_to > 0:
+        return decimate_measurements(results, decimate_to)
+    return results
 
 
-async def latest_measurement(
-    conn: aiosqlite.Connection, target_id: int
-) -> MeasurementOut | None:
+async def latest_measurement(conn: aiosqlite.Connection, target_id: int) -> MeasurementOut | None:
     async with conn.execute(
         "SELECT m.*, t.name FROM measurements m JOIN targets t ON t.id = m.target_id "
         "WHERE m.target_id = ? ORDER BY m.timestamp DESC LIMIT 1",
@@ -131,9 +136,7 @@ async def recent_results_for_targets(
     return results
 
 
-async def latencies_in_range(
-    conn: aiosqlite.Connection, *, target_id: int | None, start: str, end: str
-) -> list[float]:
+async def latencies_in_range(conn: aiosqlite.Connection, *, target_id: int | None, start: str, end: str) -> list[float]:
     query = "SELECT latency_ms FROM measurements WHERE timestamp BETWEEN ? AND ? AND latency_ms IS NOT NULL"
     params: list = [start, end]
     if target_id is not None:
@@ -144,9 +147,7 @@ async def latencies_in_range(
     return [r["latency_ms"] for r in rows]
 
 
-async def aggregate_in_range(
-    conn: aiosqlite.Connection, *, target_id: int | None, start: str, end: str
-) -> dict:
+async def aggregate_in_range(conn: aiosqlite.Connection, *, target_id: int | None, start: str, end: str) -> dict:
     query = """
         SELECT
             COUNT(*) AS sample_count,
@@ -175,7 +176,5 @@ async def earliest_timestamp(conn: aiosqlite.Connection) -> str | None:
 async def delete_older_than(conn: aiosqlite.Connection, retention_days: int) -> int:
     cutoff = (datetime.now(UTC) - timedelta(days=retention_days)).isoformat()
     async with write_transaction() as tx:
-        cursor = await tx.execute(
-            "DELETE FROM measurements WHERE timestamp < ?", (cutoff,)
-        )
+        cursor = await tx.execute("DELETE FROM measurements WHERE timestamp < ?", (cutoff,))
     return cursor.rowcount

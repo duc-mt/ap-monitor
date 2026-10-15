@@ -32,6 +32,7 @@ from app.services import (
     roam_interruption_service,
     roaming_service,
     settings_service,
+    status_service,
     walk_test_service,
 )
 
@@ -39,9 +40,7 @@ from app.services import (
 async def _fake_run_check(*, host, protocol, port, count, timeout):
     """Stand-in for app.monitoring.pinger.run_check so that if a test starts
     the real MonitoringManager, it never actually touches the network."""
-    return PingBatchResult(
-        method=protocol, attempted=count, succeeded=count, latencies=[1.0] * count
-    )
+    return PingBatchResult(method=protocol, attempted=count, succeeded=count, latencies=[1.0] * count)
 
 
 async def _fake_get_wifi_metrics(interface=None, *, use_cache=True):
@@ -65,6 +64,7 @@ async def db(tmp_path: Path):
     wifi.reset_cache()
     roam_interruption_service.reset_state()
     walk_test_service.reset_state()
+    status_service.reset_status_cache()
     yield conn
     await db_connection.close_db()
 
@@ -83,6 +83,7 @@ def client(tmp_path: Path, monkeypatch):
     wifi.reset_cache()
     roam_interruption_service.reset_state()
     walk_test_service.reset_state()
+    status_service.reset_status_cache()
 
     from app.main import app
     from fastapi.testclient import TestClient

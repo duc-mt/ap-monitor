@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import time
 from datetime import datetime, timezone
 
 UTC = timezone.utc
@@ -32,6 +33,15 @@ from app.monitoring.wifi.models import (
 logger = logging.getLogger("ap_monitor.wifi.macos")
 
 _TIMEOUT_SECONDS = 2.0
+_IP_INFO_CACHE_TTL = 5.0  # seconds
+_ip_info_cache: dict[str, tuple[float, list[str] | None, str | None, list[str] | None]] = {}
+
+
+def reset_ip_cache() -> None:
+    """Test isolation hook."""
+    _ip_info_cache.clear()
+
+
 _AIRPORT_BIN = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport"
 
 # CWInterfaceState -> our normalized vocabulary. Values match CoreWLAN's
@@ -128,10 +138,7 @@ class MacOSWifiAdapter(WifiAdapter):
         client = corewlan.CWWiFiClient.sharedWiFiClient()
         names = list(client.interfaceNames() or [])
         active = await self.get_active_interface()
-        return [
-            WifiInterfaceInfo(name=name, state="unknown", is_active=(name == active))
-            for name in names
-        ]
+        return [WifiInterfaceInfo(name=name, state="unknown", is_active=(name == active)) for name in names]
 
     async def get_active_interface(self) -> str | None:
         try:
@@ -162,11 +169,7 @@ class MacOSWifiAdapter(WifiAdapter):
         await self._apply_ip_info(metrics, interface)
         metrics.band = metrics.band or band_from_frequency(metrics.frequency_mhz)
         metrics.compute_snr()
-        if (
-            metrics.interface_state == "connected"
-            and metrics.ssid is None
-            and metrics.bssid is None
-        ):
+        if metrics.interface_state == "connected" and metrics.ssid is None and metrics.bssid is None:
             # Associated (RSSI/channel read fine) yet both identity fields are
             # blank: macOS's Location Services gate, not an unassociated
             # radio. Flag it so the UI can say so instead of showing nothing.
@@ -186,11 +189,7 @@ class MacOSWifiAdapter(WifiAdapter):
 
     def _apply_corewlan(self, metrics: WifiMetrics, corewlan, interface: str) -> None:
         client = corewlan.CWWiFiClient.sharedWiFiClient()
-        iface = (
-            client.interfaceWithName_(interface)
-            if hasattr(client, "interfaceWithName_")
-            else client.interface()
-        )
+        iface = client.interfaceWithName_(interface) if hasattr(client, "interfaceWithName_") else client.interface()
         if iface is None:
             metrics.interface_state = "unavailable"
             return
@@ -200,9 +199,7 @@ class MacOSWifiAdapter(WifiAdapter):
             return
 
         state_val = iface.interfaceState()
-        metrics.interface_state = (
-            _enum_name(corewlan, state_val, _STATE_NAME_MAP) or "unknown"
-        )
+        metrics.interface_state = _enum_name(corewlan, state_val, _STATE_NAME_MAP) or "unknown"
         is_running = metrics.interface_state == "connected"
 
         # ssid()/bssid() are the two fields Sequoia's Location Services gate -
@@ -228,12 +225,8 @@ class MacOSWifiAdapter(WifiAdapter):
             channel = iface.wlanChannel()
             if channel is not None:
                 metrics.channel = int(channel.channelNumber())
-                metrics.channel_width_mhz = _enum_name(
-                    corewlan, channel.channelWidth(), _CHANNEL_WIDTH_NAME_MAP
-                )
-                metrics.band = _enum_name(
-                    corewlan, channel.channelBand(), _CHANNEL_BAND_NAME_MAP
-                )
+                metrics.channel_width_mhz = _enum_name(corewlan, channel.channelWidth(), _CHANNEL_WIDTH_NAME_MAP)
+                metrics.band = _enum_name(corewlan, channel.channelBand(), _CHANNEL_BAND_NAME_MAP)
 
         # mcs_index has no CoreWLAN accessor - left as None deliberately.
 
@@ -250,9 +243,7 @@ class MacOSWifiAdapter(WifiAdapter):
             fields[key.strip()] = value.strip()
 
         state = fields.get("state")
-        metrics.interface_state = (
-            "connected" if state == "running" else ("disabled" if state else "unknown")
-        )
+        metrics.interface_state = "connected" if state == "running" else ("disabled" if state else "unknown")
         metrics.ssid = fields.get("SSID") or None
         metrics.bssid = fields.get("BSSID") or None
         if "agrCtlRSSI" in fields:
@@ -272,6 +263,14 @@ class MacOSWifiAdapter(WifiAdapter):
                 metrics.channel_width_mhz = int(chan_match.group(2))
 
     async def _apply_ip_info(self, metrics: WifiMetrics, interface: str) -> None:
+        now_mono = time.monotonic()
+        cached = _ip_info_cache.get(interface)
+        if cached is not None and (now_mono - cached[0]) < _IP_INFO_CACHE_TTL:
+            metrics.ipv4_addresses = cached[1]
+            metrics.gateway = cached[2]
+            metrics.dns_servers = cached[3]
+            return
+
         ip_out, gw_out, dns_out = await asyncio.gather(
             _run(["ipconfig", "getifaddr", interface]),
             _run(["route", "-n", "get", "default"]),
@@ -297,10 +296,15 @@ class MacOSWifiAdapter(WifiAdapter):
                 # (first resolver entry) to avoid mixing in VPN/other
                 # interfaces' resolvers.
                 first_block = dns_out.split("\n\n", 1)[0]
-                first_servers = re.findall(
-                    r"nameserver\[\d+\]\s*:\s*(\S+)", first_block
-                )
+                first_servers = re.findall(r"nameserver\[\d+\]\s*:\s*(\S+)", first_block)
                 metrics.dns_servers = first_servers or servers
+
+        _ip_info_cache[interface] = (
+            now_mono,
+            metrics.ipv4_addresses,
+            metrics.gateway,
+            metrics.dns_servers,
+        )
 
 
 def _parse_airport_data(out: str) -> list[NeighborNetwork]:
@@ -344,11 +348,7 @@ def _parse_airport_data(out: str) -> list[NeighborNetwork]:
             break  # end of the "Other Local Wi-Fi Networks" section entirely
 
         stripped = line.strip()
-        if (
-            ":" in stripped
-            and stripped.endswith(":")
-            and (current_indent is None or indent <= current_indent)
-        ):
+        if ":" in stripped and stripped.endswith(":") and (current_indent is None or indent <= current_indent):
             # A new SSID key, one level under the section header.
             if current is not None:
                 neighbors.append(_dict_to_neighbor(current))
@@ -370,9 +370,7 @@ def _dict_to_neighbor(fields: dict) -> NeighborNetwork:
     # e.g. "36 (80MHz)" or plain "6"
     chan_match = re.match(r"(\d+)(?:\s*\((\d+)MHz\))?", channel_raw)
     channel = int(chan_match.group(1)) if chan_match else None
-    channel_width_mhz = (
-        int(chan_match.group(2)) if chan_match and chan_match.group(2) else None
-    )
+    channel_width_mhz = int(chan_match.group(2)) if chan_match and chan_match.group(2) else None
 
     signal_noise = fields.get("Signal / Noise", "")
     signal_match = re.match(r"(-?\d+)\s*dBm", signal_noise)

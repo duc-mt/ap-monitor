@@ -75,11 +75,7 @@ def _install_fake_corewlan(monkeypatch, *, powered_on=True, running=True):
             return powered_on
 
         def interfaceState(self):
-            return (
-                fake.kCWInterfaceStateRunning
-                if running
-                else fake.kCWInterfaceStateInactive
-            )
+            return fake.kCWInterfaceStateRunning if running else fake.kCWInterfaceStateInactive
 
         def ssid(self):
             return "MyMacWifi"
@@ -146,9 +142,7 @@ def _ip_info_responder(ip="10.0.1.55\n", gw="gateway: 10.0.1.1\n", dns=""):
         if cmd[0] == "scutil":
             return FakeProc(dns)
         if cmd[0].endswith("airport"):
-            raise AssertionError(
-                "airport -I should not be called when CoreWLAN succeeds"
-            )
+            raise AssertionError("airport -I should not be called when CoreWLAN succeeds")
         raise AssertionError(f"Unexpected command: {cmd}")
 
     return fake_exec
@@ -174,9 +168,7 @@ async def test_corewlan_happy_path_maps_every_enum_correctly(monkeypatch):
     assert m.channel == 149
     assert m.channel_width_mhz == 80
     assert m.band == "5GHz"
-    assert (
-        m.mcs_index is None
-    )  # CoreWLAN has no MCS accessor - must stay None, not guessed
+    assert m.mcs_index is None  # CoreWLAN has no MCS accessor - must stay None, not guessed
     assert m.ipv4_addresses == ["10.0.1.55"]
     assert m.gateway == "10.0.1.1"
 
@@ -298,9 +290,7 @@ async def test_scan_neighbors_uses_system_profiler_and_excludes_current_network(
 
     assert len(neighbors) == 2  # "MyHomeWifi" (the current network) must not appear
     assert {n.ssid for n in neighbors} == {"NeighborNet1", "NeighborNet2"}
-    assert all(
-        n.bssid is None for n in neighbors
-    )  # never available from this data source
+    assert all(n.bssid is None for n in neighbors)  # never available from this data source
     n2 = next(n for n in neighbors if n.ssid == "NeighborNet2")
     assert n2.channel == 36
     assert n2.channel_width_mhz == 80
@@ -330,9 +320,7 @@ async def test_get_metrics_never_runs_system_profiler_on_either_path(monkeypatch
     async def recording_exec(*cmd, **kwargs):
         executed.append(cmd)
         if cmd[0].endswith("airport"):
-            return FakeProc(
-                "     agrCtlRSSI: -58\n          state: running\n           SSID: X\n"
-            )
+            return FakeProc("     agrCtlRSSI: -58\n          state: running\n           SSID: X\n")
         return FakeProc("")
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", recording_exec)
@@ -361,3 +349,41 @@ async def test_get_metrics_never_runs_system_profiler_on_either_path(monkeypatch
 
     assert executed, "expected at least the ip-info commands to run"
     assert all(cmd[0] != "system_profiler" for cmd in executed), executed
+
+
+@pytest.mark.asyncio
+async def test_ip_info_cached_within_ttl(monkeypatch):
+    _install_fake_corewlan(monkeypatch)
+    sys.modules.pop(MODULE_UNDER_TEST, None)
+    from app.monitoring.wifi.macos import MacOSWifiAdapter, reset_ip_cache
+
+    reset_ip_cache()
+    call_count = 0
+
+    def counting_ip_responder():
+        fake = _ip_info_responder()
+
+        async def inner(*cmd, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return await fake(*cmd, **kwargs)
+
+        return inner
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", counting_ip_responder())
+
+    adapter = MacOSWifiAdapter()
+    m1 = await adapter.get_metrics("en0")
+    assert m1.ipv4_addresses == ["10.0.1.55"]
+    assert call_count == 3  # ipconfig, route, scutil
+
+    # Second call within 5s TTL uses cached IP info, 0 new subprocesses
+    m2 = await adapter.get_metrics("en0")
+    assert m2.ipv4_addresses == ["10.0.1.55"]
+    assert call_count == 3
+
+    # Reset cache, subprocesses called again
+    reset_ip_cache()
+    m3 = await adapter.get_metrics("en0")
+    assert m3.ipv4_addresses == ["10.0.1.55"]
+    assert call_count == 6

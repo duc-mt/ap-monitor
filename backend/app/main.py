@@ -24,6 +24,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.api import (
     export,
@@ -65,9 +66,7 @@ async def lifespan(app: FastAPI):
     conn = await init_db()
     await seed_default_targets(conn)
     if not notifier_available():
-        logger.info(
-            "No desktop notification tool found - notifications will be logged only"
-        )
+        logger.info("No desktop notification tool found - notifications will be logged only")
     if AUTOSTART:
         await manager.start(conn)
     yield
@@ -90,6 +89,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 for router in (
     health.router,

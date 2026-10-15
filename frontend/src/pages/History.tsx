@@ -47,7 +47,12 @@ export function History() {
 
   const measurementsFetcher = useCallback(() => {
     const start = new Date(Date.now() - chartMinutes * 60_000).toISOString();
-    return api.listMeasurements({ target_id: targetId, start, limit: 5000 });
+    return api.listMeasurements({
+      target_id: targetId,
+      start,
+      limit: 5000,
+      decimate_to: chartMinutes > 1440 ? 1000 : undefined,
+    });
   }, [chartMinutes, targetId]);
   const { data: measurements } = usePolling(measurementsFetcher, 10000, [chartMinutes, targetId]);
 

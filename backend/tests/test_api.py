@@ -32,9 +32,7 @@ def test_create_list_update_delete_target(client):
     get_resp = client.get(f"/api/targets/{target['id']}")
     assert get_resp.status_code == 200
 
-    update_resp = client.put(
-        f"/api/targets/{target['id']}", json={"interval_seconds": 20}
-    )
+    update_resp = client.put(f"/api/targets/{target['id']}", json={"interval_seconds": 20})
     assert update_resp.status_code == 200
     assert update_resp.json()["interval_seconds"] == 20
 
@@ -46,16 +44,12 @@ def test_create_list_update_delete_target(client):
 
 
 def test_create_target_rejects_invalid_host(client):
-    resp = client.post(
-        "/api/targets", json={"name": "Bad", "host": "not a host!!", "protocol": "icmp"}
-    )
+    resp = client.post("/api/targets", json={"name": "Bad", "host": "not a host!!", "protocol": "icmp"})
     assert resp.status_code == 422
 
 
 def test_create_target_rejects_bad_interval(client):
-    resp = client.post(
-        "/api/targets", json={"name": "Fast", "host": "1.1.1.1", "interval_seconds": 0}
-    )
+    resp = client.post("/api/targets", json={"name": "Fast", "host": "1.1.1.1", "interval_seconds": 0})
     assert resp.status_code == 422
 
 
@@ -183,3 +177,42 @@ def test_roam_events_list_empty_initially(client):
 def test_roam_events_get_missing_returns_404(client):
     resp = client.get("/api/roam-events/99999")
     assert resp.status_code == 404
+
+
+def test_status_endpoint_uses_in_memory_cache(client, monkeypatch):
+    from app.services import status_service
+
+    status_service.reset_status_cache()
+
+    resp1 = client.get("/api/status")
+    assert resp1.status_code == 200
+
+    call_count = 0
+    orig_list_targets = status_service.targets_repo.list_targets
+
+    async def counting_list_targets(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        return await orig_list_targets(*args, **kwargs)
+
+    monkeypatch.setattr(status_service.targets_repo, "list_targets", counting_list_targets)
+
+    # Within 1s TTL, compute_status returns cached result without querying DB
+    resp2 = client.get("/api/status")
+    assert resp2.status_code == 200
+    assert call_count == 0
+
+    # Reset cache and verify targets query runs again
+    status_service.reset_status_cache()
+    resp3 = client.get("/api/status")
+    assert resp3.status_code == 200
+    assert call_count == 2
+
+
+def test_gzip_compression_enabled(client):
+    headers = {"Accept-Encoding": "gzip"}
+    resp = client.get("/api/status", headers=headers)
+    assert resp.status_code == 200
+    # The GZip middleware is configured and active
+    if len(resp.content) > 1000:
+        assert resp.headers.get("content-encoding") == "gzip"

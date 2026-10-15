@@ -12,6 +12,7 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = [
+    "E402",   # module level import not at top of file (project defines UTC = timezone.utc near top)
     "E501",   # line too long (handled by formatter)
     "E741",   # ambiguous variable name
     "UP017",  # datetime.UTC alias (keep timezone.utc for Python 3.10 compatibility)

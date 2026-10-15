@@ -25,13 +25,11 @@ would otherwise spawn `iw`/`nmcli` far more often than the underlying
 radio state actually changes.
 """
 
-
 import sys
 import time
 from datetime import timezone
 
 UTC = timezone.utc
-from typing import Dict, List, Optional, Tuple
 
 from app.models.wifi_scan import EnvironmentScanResult
 from app.monitoring.wifi.base import WifiAdapter
@@ -53,9 +51,7 @@ def _build_adapter() -> WifiAdapter:
         from app.monitoring.wifi.windows import WindowsWifiAdapter
 
         return WindowsWifiAdapter()
-    raise RuntimeError(
-        f"No WiFi adapter for platform: {sys.platform!r} (Linux, macOS and Windows only)"
-    )
+    raise RuntimeError(f"No WiFi adapter for platform: {sys.platform!r} (Linux, macOS and Windows only)")
 
 
 _adapter: WifiAdapter | None = None
@@ -77,9 +73,7 @@ async def get_active_wifi_interface() -> str | None:
     return await _get_adapter().get_active_interface()
 
 
-async def get_wifi_metrics(
-    interface: str | None = None, *, use_cache: bool = True
-) -> WifiMetrics:
+async def get_wifi_metrics(interface: str | None = None, *, use_cache: bool = True) -> WifiMetrics:
     """
     A metrics snapshot for `interface`, or the currently active WiFi
     interface (Auto mode) when `interface` is None.
@@ -90,9 +84,7 @@ async def get_wifi_metrics(
     """
     target = interface if interface is not None else await get_active_wifi_interface()
     if target is None:
-        raise RuntimeError(
-            "No active WiFi interface found (Auto mode) and none specified."
-        )
+        raise RuntimeError("No active WiFi interface found (Auto mode) and none specified.")
 
     if use_cache:
         cached = _metrics_cache.get(target)
@@ -117,6 +109,13 @@ def get_adapter_issue() -> str | None:
 def reset_cache() -> None:
     """Test isolation hook, same purpose as network_info.reset_cache()."""
     _metrics_cache.clear()
+    if sys.platform == "darwin":
+        try:
+            from app.monitoring.wifi.macos import reset_ip_cache
+
+            reset_ip_cache()
+        except ImportError:
+            pass
 
 
 async def scan_environment(interface: str | None = None) -> EnvironmentScanResult:
@@ -132,19 +131,15 @@ async def scan_environment(interface: str | None = None) -> EnvironmentScanResul
     connection out of the neighbor list and flags anything sharing its
     channel.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     target = interface if interface is not None else await get_active_wifi_interface()
     if target is None:
-        raise RuntimeError(
-            "No active WiFi interface found (Auto mode) and none specified."
-        )
+        raise RuntimeError("No active WiFi interface found (Auto mode) and none specified.")
 
     current = await get_wifi_metrics(target, use_cache=False)
     raw_neighbors = await _get_adapter().scan_neighbors(target)
-    neighbors = [
-        n for n in raw_neighbors if current.bssid is None or n.bssid != current.bssid
-    ]
+    neighbors = [n for n in raw_neighbors if current.bssid is None or n.bssid != current.bssid]
     for n in neighbors:
         n.is_co_channel = current.channel is not None and n.channel == current.channel
 

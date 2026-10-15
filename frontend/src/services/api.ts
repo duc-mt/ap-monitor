@@ -63,8 +63,9 @@ export const api = {
     request<Target>(`/targets/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteTarget: (id: number) => request<void>(`/targets/${id}`, { method: "DELETE" }),
 
-  listMeasurements: (params: { target_id?: number; start?: string; end?: string; limit?: number } = {}) =>
-    request<Measurement[]>(`/measurements${toQuery(params)}`),
+  listMeasurements: (
+    params: { target_id?: number; start?: string; end?: string; limit?: number; decimate_to?: number } = {},
+  ) => request<Measurement[]>(`/measurements${toQuery(params)}`),
 
   getStatistics: (params: { range: RangeName; start?: string; end?: string; target_id?: number }) =>
     request<StatisticsResponse>(`/statistics${toQuery(params)}`),

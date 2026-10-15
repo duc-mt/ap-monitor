@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from datetime import datetime, timezone
 
 UTC = timezone.utc
@@ -15,6 +16,17 @@ from app.monitoring.wifi.models import is_connected
 from app.services import connectivity_service, quality_service
 from app.services.settings_service import get_settings
 
+_STATUS_CACHE_TTL = 1.0  # seconds
+_last_status: StatusResponse | None = None
+_last_status_at: float = 0.0
+
+
+def reset_status_cache() -> None:
+    """Used by tests for isolation."""
+    global _last_status, _last_status_at
+    _last_status = None
+    _last_status_at = 0.0
+
 
 async def compute_status(
     conn: aiosqlite.Connection,
@@ -22,11 +34,14 @@ async def compute_status(
     monitoring_started_at: datetime | None,
     monitoring_running: bool,
 ) -> StatusResponse:
+    global _last_status, _last_status_at
+    now_mono = time.monotonic()
+    if _last_status is not None and (now_mono - _last_status_at) < _STATUS_CACHE_TTL:
+        return _last_status
+
     settings = await get_settings(conn)
     targets = await targets_repo.list_targets(conn, enabled_only=True)
-    latest_by_target = {
-        m.target_id: m for m in await measurements_repo.latest_measurements_all(conn)
-    }
+    latest_by_target = {m.target_id: m for m in await measurements_repo.latest_measurements_all(conn)}
 
     target_statuses: list[TargetStatus] = []
     reachable_count = 0
@@ -60,22 +75,10 @@ async def compute_status(
     # "Offline" flash during the first few seconds after startup).
     online = True if not have_any_measurement else reachable_count > 0
 
-    avg_latency = (
-        round(sum(headline_latencies) / len(headline_latencies), 2)
-        if headline_latencies
-        else None
-    )
-    avg_loss = (
-        round(sum(headline_losses) / len(headline_losses), 2)
-        if headline_losses
-        else None
-    )
-    jitter_values = [
-        m.jitter_ms for m in latest_by_target.values() if m.jitter_ms is not None
-    ]
-    avg_jitter = (
-        round(sum(jitter_values) / len(jitter_values), 2) if jitter_values else None
-    )
+    avg_latency = round(sum(headline_latencies) / len(headline_latencies), 2) if headline_latencies else None
+    avg_loss = round(sum(headline_losses) / len(headline_losses), 2) if headline_losses else None
+    jitter_values = [m.jitter_ms for m in latest_by_target.values() if m.jitter_ms is not None]
+    avg_jitter = round(sum(jitter_values) / len(jitter_values), 2) if jitter_values else None
 
     quality = (
         "offline"
@@ -93,9 +96,7 @@ async def compute_status(
     # once-per-poll dashboard read, not a tight measurement loop, so the
     # normal 2s cache is exactly the right tradeoff, unlike walk-test mode).
     wifi_interface = ssid = bssid = band = phy_mode = None
-    rssi_dbm = channel = channel_width_mhz = snr_db = noise_floor_dbm = (
-        tx_bitrate_mbps
-    ) = None
+    rssi_dbm = channel = channel_width_mhz = snr_db = noise_floor_dbm = tx_bitrate_mbps = None
     wifi_issue: WifiIssue | None = None
     # None = genuinely unknown (an unexpected adapter error, or an adapter
     # that could not tell); False = a real "no active WiFi interface"
@@ -107,11 +108,7 @@ async def compute_status(
         if active_iface is None:
             wifi_connected = False
             adapter_issue = wifi.get_adapter_issue()
-            wifi_issue = (
-                diagnostics.issue_for(adapter_issue)
-                if adapter_issue
-                else diagnostics.no_interface_issue()
-            )
+            wifi_issue = diagnostics.issue_for(adapter_issue) if adapter_issue else diagnostics.no_interface_issue()
         else:
             metrics = await wifi.get_wifi_metrics(active_iface)
             wifi_interface = metrics.interface
@@ -137,17 +134,13 @@ async def compute_status(
     # Read-only: compute_status() never fires notifications or touches
     # transition state, unlike the scheduler's own call to evaluate() -
     # see connectivity_service's module docstring for why that split exists.
-    connectivity = await connectivity_service.compute_status(
-        conn, settings, wifi_connected=wifi_connected
-    )
+    connectivity = await connectivity_service.compute_status(conn, settings, wifi_connected=wifi_connected)
 
     wireless_quality_score = None
     if wifi_interface is not None:
-        wireless_quality_score = await quality_service.compute_wireless_quality_score(
-            conn, wifi_interface, settings
-        )
+        wireless_quality_score = await quality_service.compute_wireless_quality_score(conn, wifi_interface, settings)
 
-    return StatusResponse(
+    result = StatusResponse(
         online=online,
         quality=quality,
         latency_ms=avg_latency,
@@ -174,3 +167,6 @@ async def compute_status(
         connectivity=connectivity,
         wireless_quality_score=wireless_quality_score,
     )
+    _last_status = result
+    _last_status_at = now_mono
+    return result
