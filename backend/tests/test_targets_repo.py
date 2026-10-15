@@ -124,8 +124,8 @@ async def test_seed_default_targets_only_runs_once(db):
     targets = await targets_repo.list_targets(db)
     first_count = len(targets)
     assert first_count == 4
-    names = {t.name for t in targets}
-    assert {"Gateway", "WAN", "Cloudflare DNS", "Google DNS"} <= names
+    names = [t.name for t in targets]
+    assert names == ["Gateway", "WAN", "Google DNS", "Cloudflare DNS"]
 
     await targets_repo.seed_default_targets(db)
     assert len(await targets_repo.list_targets(db)) == first_count
