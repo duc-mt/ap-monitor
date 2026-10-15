@@ -121,8 +121,11 @@ async def test_detect_gateway_on_linux_falls_back_when_proc_net_route_is_unparse
 @pytest.mark.asyncio
 async def test_seed_default_targets_only_runs_once(db):
     await targets_repo.seed_default_targets(db)
-    first_count = len(await targets_repo.list_targets(db))
-    assert first_count == 3
+    targets = await targets_repo.list_targets(db)
+    first_count = len(targets)
+    assert first_count == 4
+    names = {t.name for t in targets}
+    assert {"Gateway", "WAN", "Cloudflare DNS", "Google DNS"} <= names
 
     await targets_repo.seed_default_targets(db)
     assert len(await targets_repo.list_targets(db)) == first_count

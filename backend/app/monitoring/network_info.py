@@ -64,3 +64,35 @@ def parse_default_gateway_windows(output: str) -> str | None:
 
 async def get_default_gateway_windows() -> str | None:
     return parse_default_gateway_windows(await _run("route", "print", "-4"))
+
+
+async def get_wan_ip() -> str | None:
+    """
+    Fetch the public WAN IP address using icanhazip.com.
+    Validates that the returned string is a valid IP address to protect against
+    captive portals or proxy error pages returning HTML.
+    Done in a thread to avoid blocking the async event loop.
+    """
+    import urllib.request
+    import ipaddress
+    import logging
+
+    logger = logging.getLogger("ap_monitor.network_info")
+
+    def _fetch():
+        req = urllib.request.Request(
+            "https://ipv4.icanhazip.com",
+            headers={"User-Agent": "curl/7.68.0"},
+        )
+        with urllib.request.urlopen(req, timeout=5.0) as response:
+            return response.read().decode("utf-8").strip()
+
+    try:
+        raw_ip = await asyncio.to_thread(_fetch)
+        if raw_ip:
+            ipaddress.ip_address(raw_ip)
+            return raw_ip
+    except Exception as e:
+        logger.debug("Failed to detect WAN IP: %s", e)
+    return None
+
