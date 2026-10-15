@@ -20,7 +20,7 @@ export function ApCard({ status }: { status: StatusResponse }) {
   const title = status.ssid ?? (connected === false ? "Not connected to WiFi" : connected === null ? "WiFi state unknown" : "Connected (network name hidden)");
 
   return (
-    <div className="rounded-card border border-border bg-panel p-5" data-testid="ap-card">
+    <div className="rounded-card border border-border bg-panel p-5 shadow-sm transition-all-fast" data-testid="ap-card">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
           <span className="mt-0.5 rounded-control bg-accent-soft p-2 text-accent">

@@ -10,7 +10,8 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function systemPrefersDark(): boolean {
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
 function resolveEffective(theme: Theme): "light" | "dark" {
@@ -27,15 +28,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem("theme") as Theme | null) ?? "system"
   );
+  const [effective, setEffective] = useState<"light" | "dark">(() => resolveEffective(theme));
 
   useEffect(() => {
-    applyClass(resolveEffective(theme));
+    const eff = resolveEffective(theme);
+    setEffective(eff);
+    applyClass(eff);
   }, [theme]);
 
   useEffect(() => {
     if (theme !== "system" || !window.matchMedia) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => applyClass(mq.matches ? "dark" : "light");
+    const listener = (e: MediaQueryListEvent) => {
+      const eff = e.matches ? "dark" : "light";
+      setEffective(eff);
+      applyClass(eff);
+    };
     mq.addEventListener("change", listener);
     return () => mq.removeEventListener("change", listener);
   }, [theme]);
@@ -46,7 +54,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, effective: resolveEffective(theme), setTheme }}>
+    <ThemeContext.Provider value={{ theme, effective, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

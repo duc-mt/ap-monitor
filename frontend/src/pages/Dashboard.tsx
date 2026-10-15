@@ -45,11 +45,11 @@ export function Dashboard() {
   const summary = analysis?.summary;
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-center justify-between gap-4">
+    <div className="space-y-6">
+      <header className="sticky top-0 z-10 -mx-6 lg:-mx-8 -mt-6 lg:-mt-8 mb-6 px-6 lg:px-8 py-4 backdrop-blur-md bg-slate-50/80 dark:bg-slate-900/80 border-b border-border flex items-center justify-between transition-all-fast">
         <div>
-          <h1 className="text-lg font-semibold">Dashboard</h1>
-          <p className="text-sm text-muted mt-0.5">Which access point you are on, how strong it is, and when it changes.</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-text">Dashboard</h1>
+          <p className="text-xs text-muted font-medium mt-0.5">Which access point you are on, how strong it is, and when it changes.</p>
         </div>
         <ConnectivityStateBadge state={status.connectivity.overall} />
       </header>
@@ -152,11 +152,11 @@ function ApLegend({ analysis, colors }: { analysis: SignalAnalysis; colors: Map<
 function InternetSection({ status }: { status: StatusResponse }) {
   const [open, setOpen] = useState(false);
   return (
-    <section className="rounded-card border border-border bg-panel p-4" aria-label="Upstream reachability">
+    <section className="rounded-card border border-border bg-panel p-5 shadow-sm transition-all-fast" aria-label="Upstream reachability">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-medium">Upstream reachability</h3>
-          <p className="text-xs text-muted mt-0.5">
+          <h3 className="text-sm font-semibold tracking-tight text-text">Upstream reachability</h3>
+          <p className="text-xs text-muted font-medium mt-0.5">
             Whether traffic gets past the access point: {status.targets_reachable} of {status.targets_total} targets reachable
           </p>
         </div>

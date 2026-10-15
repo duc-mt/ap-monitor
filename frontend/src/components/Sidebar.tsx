@@ -34,34 +34,41 @@ export function Sidebar() {
       : [status.ssid ?? "WiFi", status.rssi_dbm !== null ? `${status.rssi_dbm} dBm` : null].filter(Boolean).join(" · ");
 
   return (
-    <aside className="w-[220px] shrink-0 border-r border-border bg-panel flex flex-col h-full">
+    <aside className="w-[230px] shrink-0 border-r border-border bg-panel flex flex-col h-full">
       <div className="px-5 py-5 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2.5 w-2.5 rounded-full transition-colors"
-            style={{ backgroundColor: dotColor, boxShadow: `0 0 8px ${dotColor}` }}
-          />
-          <span className="font-semibold tracking-tight text-[15px]">AP Monitor</span>
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-control bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
+            <RadioTower size={16} strokeWidth={2.5} />
+          </div>
+          <div className="overflow-hidden">
+            <span className="font-extrabold tracking-tight text-[15px] block truncate leading-tight">AP Monitor</span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className="h-1.5 w-1.5 rounded-full transition-colors shrink-0"
+                style={{ backgroundColor: dotColor, boxShadow: `0 0 6px ${dotColor}` }}
+              />
+              <span className="text-[10px] text-muted font-mono uppercase tracking-widest font-semibold">
+                {status ? (status.online ? "ONLINE" : "OFFLINE") : "—"}
+              </span>
+            </div>
+          </div>
         </div>
-        <p className="mt-1 text-[11px] text-muted font-mono truncate" title={apLine} data-testid="sidebar-ap">
+        <p className="mt-2 text-[11px] text-muted font-mono truncate" title={apLine} data-testid="sidebar-ap">
           {apLine}
         </p>
-        {status && (
-          <p className="text-[11px] text-muted font-mono">Internet {status.online ? "online" : "offline"}</p>
-        )}
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-1">
         {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-control px-3 py-2 text-sm transition-colors ${
+              `flex items-center gap-2.5 rounded-control px-3 py-2 text-sm transition-all-fast font-medium ${
                 isActive
-                  ? "bg-accent-soft text-accent font-medium"
-                  : "text-muted hover:text-text hover:bg-panel-alt"
+                  ? "bg-gradient-to-r from-blue-500/10 to-indigo-500/15 border-l-2 border-indigo-500 text-indigo-400 font-semibold"
+                  : "text-muted hover:text-text hover:bg-panel-alt hover:translate-x-0.5"
               }`
             }
           >
@@ -72,7 +79,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-3 py-4 border-t border-border">
-        <div className="flex items-center rounded-control border border-border p-0.5 gap-0.5">
+        <div className="flex items-center rounded-control border border-border p-0.5 gap-0.5 bg-panel-alt">
           {(["light", "system", "dark"] as Theme[]).map((t) => {
             const Icon = t === "light" ? Sun : t === "dark" ? Moon : Laptop;
             return (
@@ -80,8 +87,8 @@ export function Sidebar() {
                 key={t}
                 onClick={() => setTheme(t)}
                 aria-label={`${t} theme`}
-                className={`flex-1 flex items-center justify-center py-1.5 rounded-[4px] transition-colors ${
-                  theme === t ? "bg-accent-soft text-accent" : "text-muted hover:text-text"
+                className={`flex-1 flex items-center justify-center py-1.5 rounded-[4px] transition-all-fast ${
+                  theme === t ? "bg-accent-soft text-accent font-semibold shadow-sm" : "text-muted hover:text-text"
                 }`}
               >
                 <Icon size={14} />

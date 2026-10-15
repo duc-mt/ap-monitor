@@ -16,11 +16,14 @@ export default {
         healthy: "var(--color-healthy)",
         degraded: "var(--color-degraded)",
         offline: "var(--color-offline)",
+        "healthy-soft": "var(--color-healthy-soft)",
+        "degraded-soft": "var(--color-degraded-soft)",
+        "offline-soft": "var(--color-offline-soft)",
         unknown: "var(--color-unknown)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
-        mono: ["'JetBrains Mono'", "'SFMono-Regular'", "Consolas", "monospace"],
+        mono: ["'Fira Code'", "monospace"],
       },
       borderRadius: {
         card: "10px",
