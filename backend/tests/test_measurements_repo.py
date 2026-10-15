@@ -151,3 +151,27 @@ async def test_list_measurements_decimation(db):
     # Endpoints preserved
     assert decimated[0].latency_ms == all_rows[0].latency_ms
     assert decimated[-1].latency_ms == all_rows[-1].latency_ms
+
+
+@pytest.mark.asyncio
+async def test_insert_measurements_batch(db):
+    target = await targets_repo.create_target(db, TargetCreate(name="DNS", host="8.8.8.8"))
+    base = datetime.now(UTC)
+    items = [
+        MeasurementCreate(
+            target_id=target.id,
+            timestamp=(base + timedelta(seconds=i)).isoformat(),
+            latency_ms=float(i * 5),
+            packet_loss=0.0,
+            jitter_ms=1.0,
+            success=True,
+        )
+        for i in range(25)
+    ]
+    inserted = await measurements_repo.insert_measurements(db, items)
+    assert inserted == 25
+    rows = await measurements_repo.list_measurements(db, target_id=target.id, limit=100)
+    assert len(rows) == 25
+    assert rows[0].latency_ms == 120.0
+    assert rows[-1].latency_ms == 0.0
+

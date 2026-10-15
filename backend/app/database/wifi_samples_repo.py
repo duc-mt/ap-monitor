@@ -100,6 +100,46 @@ async def insert_sample(conn: aiosqlite.Connection, m: WifiMetrics) -> int:
     return cursor.lastrowid
 
 
+async def insert_samples(conn: aiosqlite.Connection, metrics_list: list[WifiMetrics]) -> int:
+    """Batch-insert multiple WiFi samples in a single transaction."""
+    if not metrics_list:
+        return 0
+    all_values = [
+        (
+            m.timestamp,
+            m.interface,
+            m.interface_state,
+            m.ssid,
+            m.bssid,
+            m.frequency_mhz,
+            m.channel,
+            m.band,
+            m.rssi_dbm,
+            m.signal_pct,
+            m.noise_floor_dbm,
+            m.snr_db,
+            m.phy_mode,
+            m.channel_width_mhz,
+            m.mcs_index,
+            m.tx_bitrate_mbps,
+            m.rx_bitrate_mbps,
+            m.phy_rate_mbps,
+            json.dumps(m.ipv4_addresses) if m.ipv4_addresses is not None else None,
+            json.dumps(m.ipv6_addresses) if m.ipv6_addresses is not None else None,
+            m.gateway,
+            json.dumps(m.dns_servers) if m.dns_servers is not None else None,
+        )
+        for m in metrics_list
+    ]
+    placeholders = ", ".join("?" for _ in _COLUMNS)
+    async with write_transaction() as tx:
+        cursor = await tx.executemany(
+            f"INSERT INTO wifi_samples ({', '.join(_COLUMNS)}) VALUES ({placeholders})",
+            all_values,
+        )
+    return cursor.rowcount
+
+
 async def latest_sample(
     conn: aiosqlite.Connection, interface: str
 ) -> WifiMetrics | None:

@@ -184,3 +184,14 @@ async def list_roam_events(
     async with conn.execute(query, params) as cursor:
         rows = await cursor.fetchall()
     return [_row_to_event(r) for r in rows]
+
+
+async def delete_older_than(conn: aiosqlite.Connection, retention_days: int) -> int:
+    from datetime import datetime, timedelta, timezone
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
+    async with write_transaction() as tx:
+        cursor = await tx.execute(
+            "DELETE FROM roam_events WHERE timestamp < ?", (cutoff,)
+        )
+    return cursor.rowcount

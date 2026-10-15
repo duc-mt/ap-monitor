@@ -42,10 +42,27 @@ export function usePolling<T>(
         if (!cancelled) setState((prev) => ({ data: prev.data, error: describeError(err), loading: false }));
       } finally {
         if (!cancelled && intervalMs > 0) {
-          timer = window.setTimeout(tick, intervalMs);
+          // When the tab is in the background, throttle polling to save CPU/battery
+          const delay = typeof document !== "undefined" && document.hidden
+            ? Math.max(intervalMs * 4, 15000)
+            : intervalMs;
+          timer = window.setTimeout(tick, delay);
         }
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden && !cancelled && intervalMs > 0) {
+        if (timer !== undefined) {
+          window.clearTimeout(timer);
+        }
+        void tick();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
 
     setState((prev) => ({ data: prev.data, error: prev.error, loading: prev.data === null }));
     void tick();
@@ -53,6 +70,9 @@ export function usePolling<T>(
     return () => {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intervalMs, ...deps]);

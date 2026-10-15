@@ -41,6 +41,8 @@ _PRAGMAS = (
     "PRAGMA journal_size_limit = 8388608",
     "PRAGMA foreign_keys = ON",
     "PRAGMA wal_autocheckpoint = 1000",
+    "PRAGMA cache_size = -64000",  # 64MB page cache
+    "PRAGMA mmap_size = 268435456",  # 256MB memory-mapped I/O
 )
 
 _connection: aiosqlite.Connection | None = None

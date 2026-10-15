@@ -57,6 +57,33 @@ async def insert_measurement(conn: aiosqlite.Connection, data: MeasurementCreate
     return cursor.lastrowid
 
 
+async def insert_measurements(conn: aiosqlite.Connection, items: list[MeasurementCreate]) -> int:
+    """Batch-insert multiple measurements in a single transaction."""
+    if not items:
+        return 0
+    params = [
+        (
+            item.target_id,
+            item.timestamp,
+            item.latency_ms,
+            item.packet_loss,
+            item.jitter_ms,
+            int(item.success),
+            item.error,
+        )
+        for item in items
+    ]
+    async with write_transaction() as tx:
+        cursor = await tx.executemany(
+            """
+            INSERT INTO measurements (target_id, timestamp, latency_ms, packet_loss, jitter_ms, success, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            params,
+        )
+    return cursor.rowcount
+
+
 def decimate_measurements(rows: list[MeasurementOut], target_count: int) -> list[MeasurementOut]:
     """Uniformly downsample rows to at most target_count items, preserving endpoints."""
     if len(rows) <= target_count or target_count < 2:

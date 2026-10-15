@@ -172,6 +172,28 @@ async def insert_sample(
     return cursor.lastrowid
 
 
+async def insert_samples(
+    conn: aiosqlite.Connection, walk_test_id: int, samples: list[dict]
+) -> int:
+    """Batch-insert multiple walk-test samples in a single transaction."""
+    if not samples:
+        return 0
+    all_values = [
+        tuple(
+            s.get(c, walk_test_id if c == "walk_test_id" else None)
+            for c in _SAMPLE_COLUMNS
+        )
+        for s in samples
+    ]
+    placeholders = ", ".join("?" for _ in _SAMPLE_COLUMNS)
+    async with write_transaction() as tx:
+        cursor = await tx.executemany(
+            f"INSERT INTO walk_test_samples ({', '.join(_SAMPLE_COLUMNS)}) VALUES ({placeholders})",
+            all_values,
+        )
+    return cursor.rowcount
+
+
 async def list_samples(
     conn: aiosqlite.Connection, walk_test_id: int, *, limit: int = 100000
 ) -> list[WalkTestSampleOut]:

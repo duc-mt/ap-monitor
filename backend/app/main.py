@@ -123,16 +123,32 @@ def safe_static_file(root: Path, requested: str) -> Path | None:
 if FRONTEND_DIST_DIR.is_dir():
     assets_dir = FRONTEND_DIST_DIR / "assets"
     if assets_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+        # Vite asset files have content hashes (e.g. index-4RKQ82Lp.js) and can be cached long-term
+        app.mount(
+            "/assets",
+            StaticFiles(directory=str(assets_dir), html=False, check_dir=False),
+            name="assets",
+        )
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_frontend(full_path: str):
         candidate = safe_static_file(FRONTEND_DIST_DIR, full_path)
         if candidate is not None:
-            return FileResponse(candidate)
+            # Asset files have content hashes -> cache immutable; other files -> revalidate
+            is_hashed_asset = "/assets/" in str(candidate) or candidate.parent == assets_dir
+            headers = (
+                {"Cache-Control": "public, max-age=31536000, immutable"}
+                if is_hashed_asset
+                else {"Cache-Control": "no-cache"}
+            )
+            return FileResponse(candidate, headers=headers)
         # Any other path is a client-side route (/roaming, /walk-test/3, ...):
         # hand the single-page app its entry point so deep links and refreshes work.
-        return FileResponse(FRONTEND_DIST_DIR / "index.html")
+        # index.html should not be cached aggressively so updates are picked up immediately.
+        return FileResponse(
+            FRONTEND_DIST_DIR / "index.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
 else:
 
     @app.get("/", include_in_schema=False)

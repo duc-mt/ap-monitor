@@ -9,7 +9,12 @@ UTC = timezone.utc
 import aiosqlite
 
 from app.config import MIN_INTERVAL_SECONDS
-from app.database import measurements_repo, targets_repo, wifi_samples_repo
+from app.database import (
+    measurements_repo,
+    roam_events_repo,
+    targets_repo,
+    wifi_samples_repo,
+)
 from app.models.measurement import MeasurementCreate
 from app.models.settings import AppSettings
 from app.models.target import TargetOut
@@ -222,6 +227,18 @@ class MonitoringManager:
                     logger.info(
                         "Retention cleanup removed %d wifi sample row(s)", wifi_deleted
                     )
+                roam_deleted = await roam_events_repo.delete_older_than(
+                    conn, settings.data_retention_days
+                )
+                if roam_deleted:
+                    logger.info(
+                        "Retention cleanup removed %d roam event row(s)", roam_deleted
+                    )
+                if deleted or wifi_deleted or roam_deleted:
+                    try:
+                        await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    except Exception:
+                        pass
                 await asyncio.sleep(_CLEANUP_INTERVAL)
         except asyncio.CancelledError:
             raise
