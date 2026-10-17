@@ -1,86 +1,40 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script Name:   run.sh
-# Description:   Run AP Monitor straight from a source checkout on macOS or Linux.
-# Author:        Mai Tan Duc <ducmai.network@gmail.com>
-# Created:       2026-10-10
-# Version:       1.0.0
-# License:       MIT
-# ==============================================================================
-# Usage:         ./scripts/run.sh [--no-open]
-# Notes:         Python 3.10+ required; virtualenv created automatically.
+# Description:   Cross-platform shell launcher for AP Monitor
+# Usage:         ./run.sh [options]
 # ==============================================================================
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HOST="${AP_MONITOR_HOST:-127.0.0.1}"
-PORT="${AP_MONITOR_PORT:-8766}"
-if [[ -z "${PYTHON:-}" ]]; then
-  if command -v python3.13 >/dev/null 2>&1; then PY="python3.13"
-  elif command -v python3.12 >/dev/null 2>&1; then PY="python3.12"
-  else PY="python3"
-  fi
-else
-  PY="$PYTHON"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$ROOT_DIR"
+
+# 1. If virtual environment exists, use its Python directly
+if [ -x ".venv/bin/python" ]; then
+    exec .venv/bin/python "$SCRIPT_DIR/run.py" "$@"
 fi
-OPEN=true
-for arg in "$@"; do
-  case "$arg" in
-    --no-open) OPEN=false ;;
-    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
-  esac
+
+# 2. Prefer modern Python versions (3.13, 3.12, 3.11, 3.10) before default python3/python
+CANDIDATES=("python3.13" "python3.12" "python3.11" "python3.10" "python3" "python")
+
+for py in "${CANDIDATES[@]}"; do
+    if command -v "$py" >/dev/null 2>&1; then
+        if "$py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
+            exec "$py" "$SCRIPT_DIR/run.py" "$@"
+        fi
+    fi
 done
 
-command -v "$PY" >/dev/null 2>&1 || { echo "Python 3.10+ is required ('$PY' not found)." >&2; exit 1; }
-"$PY" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' \
-  || { echo "Python 3.10 or newer is required." >&2; exit 1; }
-
-if ! "$PY" -c 'import sys; sys.exit(0 if sys.version_info < (3, 14) else 1)'; then
-  echo "Note: Python 3.14+ may lack wheels for the pinned dependencies; if installing fails, use Python 3.12 or 3.13 (PYTHON=python3.12 ./scripts/run.sh)." >&2
-fi
-
-cd "$ROOT_DIR/backend"
-VENV=".venv"
-
-# A venv is tied to the OS that created it. One carried over in a zip from
-# another machine (a Mac's venv opened on Linux, or the other way round) cannot
-# run here, so rebuild it rather than failing with a confusing error.
-if [[ -d "$VENV" ]] && ! "$VENV/bin/python" -c 'import sys' >/dev/null 2>&1; then
-  echo "==> The existing .venv was made on another system - recreating it"
-  rm -rf "$VENV"
-fi
-if [[ ! -d "$VENV" ]]; then
-  echo "==> Creating virtual environment"
-  "$PY" -m venv "$VENV"
-fi
-
-STAMP="$VENV/.deps-installed"
-if [[ ! -f "$STAMP" || requirements.txt -nt "$STAMP" ]]; then
-  echo "==> Installing dependencies (needs internet the first time)"
-  "$VENV/bin/python" -m pip install -q --upgrade pip
-  "$VENV/bin/python" -m pip install -q -r requirements.txt
-  touch "$STAMP"
-fi
-
-if [[ ! -f "$ROOT_DIR/frontend/dist/index.html" ]]; then
-  if command -v npm >/dev/null 2>&1; then
-    echo "==> Building the dashboard"
-    (cd "$ROOT_DIR/frontend" && npm install --no-audit --no-fund && npm run build)
-  else
-    echo "==> frontend/dist is missing and npm is not installed: the API will run but there is no dashboard UI." >&2
-    echo "    Install Node.js 18+ and re-run, or build on another machine and copy frontend/dist here." >&2
-  fi
-fi
-
-URL="http://$HOST:$PORT"
-if [[ "$OPEN" == true ]]; then
-  (
-    sleep 2
-    if command -v open >/dev/null 2>&1; then open "$URL"
-    elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1 || true
+# Fallback check for Python >= 3.8 if >= 3.10 is not found
+for py in "python3" "python"; do
+    if command -v "$py" >/dev/null 2>&1; then
+        if "$py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+            exec "$py" "$SCRIPT_DIR/run.py" "$@"
+        fi
     fi
-  ) &
-fi
+done
 
-echo "==> AP Monitor running at $URL  (Ctrl+C to stop)"
-exec "$VENV/bin/python" -m uvicorn app.main:app --host "$HOST" --port "$PORT"
+echo "[ERROR] Python 3.10+ (or at least 3.8+) is required but not found in PATH." >&2
+echo "Please install Python 3 (https://www.python.org/) or install via Homebrew / package manager." >&2
+exit 1

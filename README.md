@@ -48,24 +48,24 @@ dependencies have wheels; 3.14 may need newer pins), and Node.js 18+ only if
 
 **Linux / macOS / WSL**
 ```bash
-./run.sh                    # Root launcher (auto-detects python, sets up .venv & dependencies)
-./run.sh --help             # Run CLI commands directly
+./run                       # Root launcher (auto-detects python, sets up .venv & dependencies)
+./run --help                # Run CLI commands directly
 # Or using the scripts folder:
-./scripts/run.sh            # add --no-open to skip opening the browser
+./scripts/run-server.sh     # add --no-open to skip opening the browser
 ```
 
-**Windows** — double-click `run.bat` or in CMD / PowerShell:
+**Windows** — run `scripts\run.bat` or in CMD / PowerShell:
 ```cmd
-run.bat                     # Root launcher
-run.bat --help              # Run CLI commands directly
+run                         # Root launcher
+run --help                  # Run CLI commands directly
 # Or using PowerShell script:
-.\scripts\run.ps1           # add -NoOpen to skip opening the browser
+.\scripts\run-server.ps1    # add -NoOpen to skip opening the browser
 ```
 
 **Universal (Python directly)**
 ```bash
-python3 run.py              # Linux / macOS
-python run.py               # Windows
+python3 scripts/run.py      # Linux / macOS
+python scripts\run.py       # Windows
 ```
 
 A virtualenv copied from another operating system (for example one inside a
@@ -145,7 +145,7 @@ the dashboard shows a banner and **roaming cannot be detected** until it is
 fixed (System Settings → Privacy & Security → Location Services, allow the
 app that launches the backend, then restart it). macOS may not show a prompt
 for a background Python process by itself; if your launcher is not listed
-there, start the backend from Terminal with `scripts/run.sh` and grant Terminal.
+there, start the backend from Terminal with `scripts/run-server.sh` and grant Terminal.
 
 **Windows.** Signal strength is converted from the percentage `netsh`
 reports using Microsoft's documented mapping, so it is accurate to roughly
@@ -183,10 +183,11 @@ ap-monitor/
 ├── packaging/
 │   ├── systemd/        ap-monitor.service (hardened unit, Linux)
 │   └── launchd/        com.ap-monitor.agent.plist (per-user LaunchAgent, macOS)
-└── scripts/            run.sh / run.ps1 / run.bat   run from source (all platforms)
-                         install.sh / uninstall.sh (Linux)
-                         install-macos.sh / uninstall-macos.sh (macOS)
-                         install-windows.ps1 / uninstall-windows.ps1 (Windows)
+└── scripts/            run-server.sh / run-server.ps1 / run-server.bat   run server from source
+│                       run.sh / run.bat             universal CLI runner scripts
+│                       install.sh / uninstall.sh (Linux)
+│                       install-macos.sh / uninstall-macos.sh (macOS)
+│                       install-windows.ps1 / uninstall-windows.ps1 (Windows)
 ```
 
 **Data flow**: `scheduler.py` runs one async task per enabled target. Each
@@ -242,8 +243,8 @@ pip install -e .     # installs the `ap-monitor` command
 ## Running
 
 ```bash
-./scripts/run.sh          # Linux / macOS
-.\scripts\run.ps1         # Windows
+./scripts/run-server.sh          # Linux / macOS
+.\scripts\run-server.ps1         # Windows
 ```
 
 or, if you have already set up a virtualenv:

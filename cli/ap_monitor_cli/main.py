@@ -36,8 +36,8 @@ def _is_running_hint() -> str:
     if sys.platform == "win32":
         return f"Get-ScheduledTask -TaskName '{TASK_NAME}'   (or run scripts\\run.bat from the source folder)"
     if sys.platform == "darwin":
-        return "launchctl list | grep ap-monitor   (or run scripts/run.sh from the source folder)"
-    return "sudo systemctl status ap-monitor   (or run scripts/run.sh from the source folder)"
+        return "launchctl list | grep ap-monitor   (or run scripts/run-server.sh from the source folder)"
+    return "sudo systemctl status ap-monitor   (or run scripts/run-server.sh from the source folder)"
 
 
 class ApiClient:
